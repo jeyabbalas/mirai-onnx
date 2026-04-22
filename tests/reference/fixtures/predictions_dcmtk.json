@@ -1,0 +1,10 @@
+{
+  "predictions": {
+    "Year 1": 0.0298,
+    "Year 2": 0.0483,
+    "Year 3": 0.0684,
+    "Year 4": 0.09,
+    "Year 5": 0.1016
+  },
+  "modelVersion": "0.14.1"
+}

@@ -1,0 +1,1155 @@
+{
+  "schema_version": 1,
+  "captured_at_utc": "2026-04-22T07:58:25Z",
+  "env": {
+    "platform": "Darwin-25.4.0-x86_64",
+    "python_version": "3.8.20",
+    "python_arch": "x86_64",
+    "hostname": "Jeyas-MacBook-Pro.local",
+    "torch_version": "1.9.0",
+    "torchvision_version": "0.10.0",
+    "numpy_version": "1.24.4",
+    "pydicom_version": "2.3.0",
+    "pillow_version": "9.0.0",
+    "dcmtk_version": "$dcmtk: dcm2img v3.7.0 2025-12-15 $",
+    "git": {
+      "mirai_sha": "4af944449863966a5a9c66b44e56e3c141223897",
+      "mirai_dirty": false,
+      "project_sha": "",
+      "project_dirty": false
+    }
+  },
+  "config": {
+    "config_path_from_mirai": "onconet/configs/mirai_trained.json",
+    "config_sha256": "32fdedfa38bc54869a06f1ef324ff329bae57104f08a8e13c4699f687aef0198",
+    "img_size_w_h": [
+      1664,
+      2048
+    ],
+    "img_mean": [
+      7047.99
+    ],
+    "img_std": [
+      12005.5
+    ],
+    "max_followup": 5,
+    "use_pred_risk_factors_at_test": true,
+    "use_pred_risk_factors_if_unk": false
+  },
+  "snapshots": {
+    "img_encoder_snapshot": {
+      "path": "/Users/jeya/.mirai/snapshots/mgh_mammo_MIRAI_Base_May20_2019.p",
+      "sha256": "e66261f434474686462e5c7035de37452f47e4e7cc8831086be19397383e8af3",
+      "size_bytes": 50651758
+    },
+    "transformer_snapshot": {
+      "path": "/Users/jeya/.mirai/snapshots/mgh_mammo_cancer_MIRAI_Transformer_Jan13_2020.p",
+      "sha256": "cb4ef50459d747d38edfb846b3cd29869ccad9b7e291eb5f2fe66559d914e610",
+      "size_bytes": 121606651
+    },
+    "calibrator_path": {
+      "path": "/Users/jeya/.mirai/snapshots/calibrators/Mirai_calibrator_mar12_2022.p",
+      "sha256": "822092d81272c97883d54a4bde0bc1cdcebadb861dea8467cb93201fedb73efa",
+      "size_bytes": 865
+    },
+    "remote_snapshot_uri": "https://github.com/reginabarzilaygroup/Mirai/releases/download/v0.8.0/snapshots.zip"
+  },
+  "demo_data": {
+    "remote_uri": "https://github.com/reginabarzilaygroup/Mirai/releases/latest/download/mirai_demo_data.zip",
+    "files": [
+      {
+        "name": "ccl1.dcm",
+        "sha256": "beee24f77c1bfb28632ffcbf12a5f3997a8009ba1c2a2d019317c21e73d4f794",
+        "size_bytes": 15615720
+      },
+      {
+        "name": "ccr1.dcm",
+        "sha256": "49672f41ded5b5f3da14fb3cae3579e1d5185637d36d60b9c0fd65faadac6adb",
+        "size_bytes": 15615224
+      },
+      {
+        "name": "mlol2.dcm",
+        "sha256": "51bac18bfa6edf0987ad8c53d266a9beaaedf557425ef9ed5d939135fe54f48a",
+        "size_bytes": 15614294
+      },
+      {
+        "name": "mlor2.dcm",
+        "sha256": "f65aaa50d5bbff7c79d1ff2ded2fb658b64e885ad5d3c32fbb48aecffa2a77d8",
+        "size_bytes": 15614014
+      }
+    ]
+  },
+  "determinism": {
+    "torch_set_num_threads": 1,
+    "use_deterministic_algorithms": "strict",
+    "seeds": {
+      "python": 0,
+      "numpy": 0,
+      "torch": 0,
+      "PYTHONHASHSEED": "0"
+    }
+  },
+  "asserts_passed": [
+    "all four (view,side) tuples present, no duplicates",
+    "no NaN or Inf in any captured tensor",
+    "xai_hidden ~= relu(pool_hidden)",
+    "xai_hidden[:, -rf_dim:] ~= relu(risk_factor_vector)",
+    "concat(per-key probs in risk_factor_keys order) ~= risk_factor_vector",
+    "round(calibrated, 4) == predictions",
+    "raw_logit monotone-nondecreasing across years"
+  ],
+  "runs": {
+    "pydicom": {
+      "predictions": {
+        "Year 1": 0.0314,
+        "Year 2": 0.0505,
+        "Year 3": 0.0711,
+        "Year 4": 0.0935,
+        "Year 5": 0.1052
+      },
+      "modelVersion": "0.14.1",
+      "batch_order": [
+        {
+          "slot": 0,
+          "view": 0,
+          "view_str": "CC",
+          "side": 1,
+          "side_str": "L"
+        },
+        {
+          "slot": 1,
+          "view": 0,
+          "view_str": "CC",
+          "side": 0,
+          "side_str": "R"
+        },
+        {
+          "slot": 2,
+          "view": 1,
+          "view_str": "MLO",
+          "side": 1,
+          "side_str": "L"
+        },
+        {
+          "slot": 3,
+          "view": 1,
+          "view_str": "MLO",
+          "side": 0,
+          "side_str": "R"
+        }
+      ],
+      "shapes": {
+        "rf_dim": 100,
+        "preproc_batch_x": [
+          1,
+          3,
+          4,
+          2048,
+          1664
+        ],
+        "image_encoder_out": [
+          1,
+          4,
+          512
+        ],
+        "pool_hidden": [
+          1,
+          612
+        ],
+        "risk_factor_vector": [
+          1,
+          100
+        ],
+        "xai_hidden": [
+          1,
+          612
+        ],
+        "raw_logit": [
+          1,
+          5
+        ],
+        "raw_sigmoid": [
+          1,
+          5
+        ],
+        "calibrated": [
+          5
+        ]
+      },
+      "risk_factor_keys": [
+        "density",
+        "binary_family_history",
+        "binary_biopsy_benign",
+        "binary_biopsy_LCIS",
+        "binary_biopsy_atypical_hyperplasia",
+        "age",
+        "menarche_age",
+        "menopause_age",
+        "first_pregnancy_age",
+        "prior_hist",
+        "race",
+        "parous",
+        "menopausal_status",
+        "weight",
+        "height",
+        "ovarian_cancer",
+        "ovarian_cancer_age",
+        "ashkenazi",
+        "brca",
+        "mom_bc_cancer_history",
+        "m_aunt_bc_cancer_history",
+        "p_aunt_bc_cancer_history",
+        "m_grandmother_bc_cancer_history",
+        "p_grantmother_bc_cancer_history",
+        "sister_bc_cancer_history",
+        "mom_oc_cancer_history",
+        "m_aunt_oc_cancer_history",
+        "p_aunt_oc_cancer_history",
+        "m_grandmother_oc_cancer_history",
+        "p_grantmother_oc_cancer_history",
+        "sister_oc_cancer_history",
+        "hrt_type",
+        "hrt_duration",
+        "hrt_years_ago_stopped"
+      ],
+      "fixture_files": {
+        "dicom_raw_uint16/CC_L.npy": {
+          "sha256": "7d7ad4dc8d6ada93c9421c41bde5a5cd5a2e3fe6c91832a4bd419caa15da8e9f",
+          "dtype": "uint16",
+          "shape": [
+            3062,
+            2394
+          ]
+        },
+        "dicom_raw_uint16/CC_R.npy": {
+          "sha256": "dea4f82d82f9584237ef4b61338988667725f2a271de657fa5576cdf059f398d",
+          "dtype": "uint16",
+          "shape": [
+            3062,
+            2394
+          ]
+        },
+        "dicom_raw_uint16/MLO_L.npy": {
+          "sha256": "762f3730f9caa81e7538ca6698e5aed5f12c2a67f4b6a06e9241c6ba7a41e522",
+          "dtype": "uint16",
+          "shape": [
+            3062,
+            2394
+          ]
+        },
+        "dicom_raw_uint16/MLO_R.npy": {
+          "sha256": "b94ffad2e0474dcb6d3bd4a3cce072db955de3be5eadb6c7b105292d1ed63af1",
+          "dtype": "uint16",
+          "shape": [
+            3062,
+            2394
+          ]
+        },
+        "preproc_tensor/CC_L.npy": {
+          "sha256": "774455781b90970b78090a19f4e7522815a5fb2328dc80ab59f54e935a96f4af",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2048,
+            1664
+          ]
+        },
+        "preproc_tensor/CC_R.npy": {
+          "sha256": "4591fc5e652cc24b98f607d8320b4020af02030732bfa24333dc58d379fa5faf",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2048,
+            1664
+          ]
+        },
+        "preproc_tensor/MLO_L.npy": {
+          "sha256": "afbdfea1d9b057e00be0f8528a5114e3d617e135d1f006e66901f328e792cabc",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2048,
+            1664
+          ]
+        },
+        "preproc_tensor/MLO_R.npy": {
+          "sha256": "8d4eac2b6cbb2d01181e9663cae9f2f495b682c838bc5e700b053dd82d56f387",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2048,
+            1664
+          ]
+        },
+        "pred_risk_factors_per_key/density.npy": {
+          "sha256": "ab0d1bea6d6fbb03eb9bad352441a250b7a5ab2957f665c5af8fcff0a574c7f3",
+          "dtype": "float32",
+          "shape": [
+            1,
+            4
+          ]
+        },
+        "pred_risk_factors_per_key/binary_family_history.npy": {
+          "sha256": "e33416f8864a91450832579f9b31c2c52cb13a66ab3baa5f59d255a0702ad6a4",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/binary_biopsy_benign.npy": {
+          "sha256": "a24df51f2532d20543e4b59d8437489a62ad034ab07af1b87d0020b7a4231437",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/binary_biopsy_LCIS.npy": {
+          "sha256": "ca2c1e064c0539206640805941c8df7af0a57454178377dac7b1c14e6dde1063",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/binary_biopsy_atypical_hyperplasia.npy": {
+          "sha256": "d37b58e6d04a6660c8f704eecea30bf6027fb08c8f9a7cecf6f8d027dc8308b0",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/age.npy": {
+          "sha256": "4342ef3a3a3fdb1d5f7bc452330555cf6859645aab93f19db7b835c7bda85d9d",
+          "dtype": "float32",
+          "shape": [
+            1,
+            6
+          ]
+        },
+        "pred_risk_factors_per_key/menarche_age.npy": {
+          "sha256": "5bc8fb6abf2cf5aeedf6323a693599332149e66d3c5e5eaa460347181065387f",
+          "dtype": "float32",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "pred_risk_factors_per_key/menopause_age.npy": {
+          "sha256": "9971407a96f8b4b0fa2fbe374cadab1db6dd9c4bdda29f3d202bfc6a7366967f",
+          "dtype": "float32",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "pred_risk_factors_per_key/first_pregnancy_age.npy": {
+          "sha256": "76ef281aeaa7c39e79cc21a35bb5a1dab3964d20cd612cfdee800706fa001ddd",
+          "dtype": "float32",
+          "shape": [
+            1,
+            6
+          ]
+        },
+        "pred_risk_factors_per_key/prior_hist.npy": {
+          "sha256": "d560a6b37182fa73d9067cb4e5245a4013dedcf164cbde33c30c16f8c1731bed",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/race.npy": {
+          "sha256": "25d7fa03be63099374cedad05cbd9455c2818fb72f47d26af590952a50e73307",
+          "dtype": "float32",
+          "shape": [
+            1,
+            13
+          ]
+        },
+        "pred_risk_factors_per_key/parous.npy": {
+          "sha256": "1884941483f3b702066a57b5da2bf945e1c2655b1552eb6f633a95f098e7eb2e",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/menopausal_status.npy": {
+          "sha256": "5f7770e5059564da28a98e0ef26f45f0d4f5b769e13fe153b9f2f20bd8a0bbcd",
+          "dtype": "float32",
+          "shape": [
+            1,
+            4
+          ]
+        },
+        "pred_risk_factors_per_key/weight.npy": {
+          "sha256": "e9c7cb3410b57a47be488ad2a86d140e2326ae73a72616b6325293b4fb54843a",
+          "dtype": "float32",
+          "shape": [
+            1,
+            7
+          ]
+        },
+        "pred_risk_factors_per_key/height.npy": {
+          "sha256": "a76d2d878986b75711b12b821a2db787a459577150596b944be5812d97785447",
+          "dtype": "float32",
+          "shape": [
+            1,
+            7
+          ]
+        },
+        "pred_risk_factors_per_key/ovarian_cancer.npy": {
+          "sha256": "ba7a9b32453bca8cfe001240ecc3acfdeb45f5ddef66cc7daf001522c355f60b",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/ovarian_cancer_age.npy": {
+          "sha256": "8bd4e12bda8b1685313e85d95d1f1c26b1fd8cb3e8667f92f869be64eb85f453",
+          "dtype": "float32",
+          "shape": [
+            1,
+            6
+          ]
+        },
+        "pred_risk_factors_per_key/ashkenazi.npy": {
+          "sha256": "25a65d3dd6c817da96a55f3cdcad71fae7a3a706c2fb9f694bd667527ad84ddd",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/brca.npy": {
+          "sha256": "e2d5298ae09f8796fde62cd1cd579dda2c0e8ee02e1129e825bb1916ed4d77b1",
+          "dtype": "float32",
+          "shape": [
+            1,
+            4
+          ]
+        },
+        "pred_risk_factors_per_key/mom_bc_cancer_history.npy": {
+          "sha256": "44c635a0b4cfe8f074deecf1a631cddbacb79ebb4fca0b24eae61e9867ce0801",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/m_aunt_bc_cancer_history.npy": {
+          "sha256": "ad1a4b3dbdef3b742965906c3b22ab05a0d112ea0e6f563494c7c222eb750018",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/p_aunt_bc_cancer_history.npy": {
+          "sha256": "40991736de9bdb074f420a396cf0262c2bfa6405b77c8de116b995f5a90b9d11",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/m_grandmother_bc_cancer_history.npy": {
+          "sha256": "115848d081fb0cc219856b818a20ce520aa0bd6a93e8a07b8a5f897ad7092bf2",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/p_grantmother_bc_cancer_history.npy": {
+          "sha256": "8e6b940b37c839fe1eb5e767643f362d7762a015ebc74d94a532250dc6c19d81",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/sister_bc_cancer_history.npy": {
+          "sha256": "c889abc940476c4892aaf18918e2b800d34d50fc5c5a96a53cb36bdbedad7292",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/mom_oc_cancer_history.npy": {
+          "sha256": "a2c8a084cb71a3def092b3039ce887854d57b1ad494add88509056b4be87de77",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/m_aunt_oc_cancer_history.npy": {
+          "sha256": "07b8925681861afef08cc0a4084eb9670115762a6380c2d84dd7303a20581e98",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/p_aunt_oc_cancer_history.npy": {
+          "sha256": "90d36b8905da9f2e0f158f9a2e1a0a0b8b16bdc5628f739afeb481bef8d5c627",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/m_grandmother_oc_cancer_history.npy": {
+          "sha256": "7632a811f5c478c83f5dc80cd91387d1431142cedf41fba799c2575b538cdb70",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/p_grantmother_oc_cancer_history.npy": {
+          "sha256": "3c574d6cc0296b9c2158ae68045242ea416af51b4507f09dbd9b2fabbfaa431d",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/sister_oc_cancer_history.npy": {
+          "sha256": "913f803b85ca605395c5f80fccd77b5f3953081c70ab5f07219a44de1411d270",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key/hrt_type.npy": {
+          "sha256": "7c1e2485c9df99a6f2912c04e959bd0cb68137d4b619baa101fee32edd34f9d3",
+          "dtype": "float32",
+          "shape": [
+            1,
+            3
+          ]
+        },
+        "pred_risk_factors_per_key/hrt_duration.npy": {
+          "sha256": "43390530d438b9a8402105b5dbf6954f333dbf3c1e0791172159ecbadd8ce3ca",
+          "dtype": "float32",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "pred_risk_factors_per_key/hrt_years_ago_stopped.npy": {
+          "sha256": "ec50a6ecbbafd4571a0ad34de800efd463965783a22798660fbc1089626b8a62",
+          "dtype": "float32",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "image_encoder_out.npy": {
+          "sha256": "3e76104099baf4455ccdbe93f789f0307c357341480879514adad6a0ebe49b29",
+          "dtype": "float32",
+          "shape": [
+            1,
+            4,
+            512
+          ]
+        },
+        "image_hidden_in_pool.npy": {
+          "sha256": "671d60c474271ac1a2d9abc92a549598b0f9afb602e9dc1447e376c1a0285d07",
+          "dtype": "float32",
+          "shape": [
+            1,
+            512
+          ]
+        },
+        "pool_hidden.npy": {
+          "sha256": "4de6534041a895fbd81de2a36d1c18eec40368eb87dd86df0e80e67f9e457826",
+          "dtype": "float32",
+          "shape": [
+            1,
+            612
+          ]
+        },
+        "risk_factor_vector.npy": {
+          "sha256": "d8112dc903139d163339fc62319e523006454c3f739513b8688ec7f5820c5ac8",
+          "dtype": "float32",
+          "shape": [
+            1,
+            100
+          ]
+        },
+        "xai_hidden.npy": {
+          "sha256": "6f3e9b06ee5e4743ddf0e3f630645bcd4f1ddc3c03d3b91b5b665a90b0934212",
+          "dtype": "float32",
+          "shape": [
+            1,
+            612
+          ]
+        },
+        "raw_logit.npy": {
+          "sha256": "3b6d0052073634a4f2246b1cfd0f6f23a433637eb9c31b15b40708e4f38ffcdc",
+          "dtype": "float32",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "raw_sigmoid.npy": {
+          "sha256": "b64ff4ded37bbe272a7d29b6ae9d2b56bc67ead10d72923023429356cec061a3",
+          "dtype": "float32",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "calibrated.npy": {
+          "sha256": "5975935543bb412dadebe787115e5b687f98abd42274abf6318f8de5e0ec9c94",
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "predictions.json": {
+          "sha256": "4c3e763bf4443f30ff17ffe2ab77768a24be19c99d7464ff43d345bf5224cf0b"
+        },
+        "batch_order.json": {
+          "sha256": "29fb6238ce727930bea6e80a3b50adb4d90384edae3e21de21f967fda7105ae6"
+        }
+      }
+    },
+    "dcmtk": {
+      "predictions": {
+        "Year 1": 0.0298,
+        "Year 2": 0.0483,
+        "Year 3": 0.0684,
+        "Year 4": 0.09,
+        "Year 5": 0.1016
+      },
+      "modelVersion": "0.14.1",
+      "batch_order": [
+        {
+          "slot": 0,
+          "view": 0,
+          "view_str": "CC",
+          "side": 1,
+          "side_str": "L"
+        },
+        {
+          "slot": 1,
+          "view": 0,
+          "view_str": "CC",
+          "side": 0,
+          "side_str": "R"
+        },
+        {
+          "slot": 2,
+          "view": 1,
+          "view_str": "MLO",
+          "side": 1,
+          "side_str": "L"
+        },
+        {
+          "slot": 3,
+          "view": 1,
+          "view_str": "MLO",
+          "side": 0,
+          "side_str": "R"
+        }
+      ],
+      "shapes": {
+        "rf_dim": 100,
+        "preproc_batch_x": [
+          1,
+          3,
+          4,
+          2048,
+          1664
+        ],
+        "image_encoder_out": [
+          1,
+          4,
+          512
+        ],
+        "pool_hidden": [
+          1,
+          612
+        ],
+        "risk_factor_vector": [
+          1,
+          100
+        ],
+        "xai_hidden": [
+          1,
+          612
+        ],
+        "raw_logit": [
+          1,
+          5
+        ],
+        "raw_sigmoid": [
+          1,
+          5
+        ],
+        "calibrated": [
+          5
+        ]
+      },
+      "risk_factor_keys": [
+        "density",
+        "binary_family_history",
+        "binary_biopsy_benign",
+        "binary_biopsy_LCIS",
+        "binary_biopsy_atypical_hyperplasia",
+        "age",
+        "menarche_age",
+        "menopause_age",
+        "first_pregnancy_age",
+        "prior_hist",
+        "race",
+        "parous",
+        "menopausal_status",
+        "weight",
+        "height",
+        "ovarian_cancer",
+        "ovarian_cancer_age",
+        "ashkenazi",
+        "brca",
+        "mom_bc_cancer_history",
+        "m_aunt_bc_cancer_history",
+        "p_aunt_bc_cancer_history",
+        "m_grandmother_bc_cancer_history",
+        "p_grantmother_bc_cancer_history",
+        "sister_bc_cancer_history",
+        "mom_oc_cancer_history",
+        "m_aunt_oc_cancer_history",
+        "p_aunt_oc_cancer_history",
+        "m_grandmother_oc_cancer_history",
+        "p_grantmother_oc_cancer_history",
+        "sister_oc_cancer_history",
+        "hrt_type",
+        "hrt_duration",
+        "hrt_years_ago_stopped"
+      ],
+      "fixture_files": {
+        "dicom_raw_uint16_dcmtk/CC_L.npy": {
+          "sha256": "c7389e9526fe2b4c3c527aa6b9c13851c8ce60c692c31b088d8dcf29bd31d988",
+          "dtype": "uint16",
+          "shape": [
+            3062,
+            2394
+          ]
+        },
+        "dicom_raw_uint16_dcmtk/CC_R.npy": {
+          "sha256": "c4b96b38fc72901d3a2f8e0870eb1df43c37be81f05193166625e2e4d08aee11",
+          "dtype": "uint16",
+          "shape": [
+            3062,
+            2394
+          ]
+        },
+        "dicom_raw_uint16_dcmtk/MLO_L.npy": {
+          "sha256": "aca6b3a0d3437ef725a594f447a00bb6c3bdf5280124aecebfc0a3524e037172",
+          "dtype": "uint16",
+          "shape": [
+            3062,
+            2394
+          ]
+        },
+        "dicom_raw_uint16_dcmtk/MLO_R.npy": {
+          "sha256": "d877c0d04c60cf38fb31be35cc561a414d1fb7d8acaf1186a13a49f9f5a9c67f",
+          "dtype": "uint16",
+          "shape": [
+            3062,
+            2394
+          ]
+        },
+        "preproc_tensor_dcmtk/CC_L.npy": {
+          "sha256": "97fb832cb030ce3b4edf119c4cd2145df2ea18f65e29678cba169f68c68be889",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2048,
+            1664
+          ]
+        },
+        "preproc_tensor_dcmtk/CC_R.npy": {
+          "sha256": "d8e03b93eb2ee24d3306fc1e6d9a94da0c8d3339710eca61241f8379205e2c7f",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2048,
+            1664
+          ]
+        },
+        "preproc_tensor_dcmtk/MLO_L.npy": {
+          "sha256": "781918a94c17d4e0c25fbd980b7b6ac1d2bad3868ca33af2e6b27bac97549a95",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2048,
+            1664
+          ]
+        },
+        "preproc_tensor_dcmtk/MLO_R.npy": {
+          "sha256": "7a2c74a83f60f41ce0a5ba3de4c4697315f05b63088c471a09f48519bcb2706f",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2048,
+            1664
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/density.npy": {
+          "sha256": "6d87ee82d210f0e38218d8d1bdccc125c37eaf255a6f4c0ca60889fee5286b76",
+          "dtype": "float32",
+          "shape": [
+            1,
+            4
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/binary_family_history.npy": {
+          "sha256": "f6881b2b24afd58134bdfb009c06fda20a1361c5ef8d525522389b43419e925d",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/binary_biopsy_benign.npy": {
+          "sha256": "53887f3d17fcc0983c20011d60f96d2181923b608541a2ae79e7efad72fd1b4a",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/binary_biopsy_LCIS.npy": {
+          "sha256": "bb672e836b88eea8b3d4f7dae0cba1c75a0fe58a6fdff92e1068224ac5cbf98b",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/binary_biopsy_atypical_hyperplasia.npy": {
+          "sha256": "cbfb1f18fe4a5abb66f30128ff709d80e7879a4b1c676198ac0f8570aadcc9f7",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/age.npy": {
+          "sha256": "6a2008b6c807ba0bca931fb5c78cc12f22a6c59e113a2b13ffd2639664c49616",
+          "dtype": "float32",
+          "shape": [
+            1,
+            6
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/menarche_age.npy": {
+          "sha256": "fe5939c914f0bf42324625f716cd7b89031776ea99c973137f1c8566b8a8734a",
+          "dtype": "float32",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/menopause_age.npy": {
+          "sha256": "50a7e1f66297320719ce3629f0269fc43b4ecf1dad32a060a51f41f860a0218a",
+          "dtype": "float32",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/first_pregnancy_age.npy": {
+          "sha256": "f71e4133ac738cb80b8db9c989773472c085b783fa234114897a4e7e6741d58b",
+          "dtype": "float32",
+          "shape": [
+            1,
+            6
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/prior_hist.npy": {
+          "sha256": "3f9754284cabd8f3f5d6ee67af49fcfbde94965fb9bd79ae0d534f6f4dda9136",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/race.npy": {
+          "sha256": "cc876f19571df770c6d8cb1813bf5d7549940ad8a46126b3201b3c2944c88da5",
+          "dtype": "float32",
+          "shape": [
+            1,
+            13
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/parous.npy": {
+          "sha256": "813b44d8ea420ffcd29fa52b3a7ed1f5bf704a642dc94fe195594dbeae17ae8e",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/menopausal_status.npy": {
+          "sha256": "fa1fde716e4d8325c154a167dc35a7844d8d8dd10e20441965415783081eb4ff",
+          "dtype": "float32",
+          "shape": [
+            1,
+            4
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/weight.npy": {
+          "sha256": "6521dd540d868843e2afbc558f76e8ef17888272f6a815ed9bbc81aa297f8343",
+          "dtype": "float32",
+          "shape": [
+            1,
+            7
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/height.npy": {
+          "sha256": "4e819c690040d28740492e3f01fd77d94f7959cb5efbbadae0f79c38bdfb2b14",
+          "dtype": "float32",
+          "shape": [
+            1,
+            7
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/ovarian_cancer.npy": {
+          "sha256": "114feba8e4d56b2617959f00ba963abcaf03d146e1eceb34bb8679d8d6acd342",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/ovarian_cancer_age.npy": {
+          "sha256": "10ded3da5a69571f7f9cc048164c81403f8d99d05d37d6465087c39fa5ac592d",
+          "dtype": "float32",
+          "shape": [
+            1,
+            6
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/ashkenazi.npy": {
+          "sha256": "428b61a5809242ce0b0a915d4d95c3c9d38a04faf01ebcdfa6007bbb4bb39c69",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/brca.npy": {
+          "sha256": "015097ad6ffb4b7a1cbcc01e0b4613cba30e5222e7f5e73e01dfd9125b952448",
+          "dtype": "float32",
+          "shape": [
+            1,
+            4
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/mom_bc_cancer_history.npy": {
+          "sha256": "490933140fdd0f1a986fa6c25aa00e0a75c4fb2364ca747fa97598e15be7d33c",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/m_aunt_bc_cancer_history.npy": {
+          "sha256": "f9495be813dbd514f1e6f285b052714c05b177ad617a6694041f34393ffbad34",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/p_aunt_bc_cancer_history.npy": {
+          "sha256": "0878938e0ada679f2a474890fb5ae1b0026a5de28293799e48a9eb9dcd925113",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/m_grandmother_bc_cancer_history.npy": {
+          "sha256": "878f25a2d48e94055f3c0d9bd638567d395afaeaf8a149663b9d40e863148c20",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/p_grantmother_bc_cancer_history.npy": {
+          "sha256": "d9825d006a429c1133de8ecfa5e2466bafbdaf6311b7c38e36a0aa8caf4de646",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/sister_bc_cancer_history.npy": {
+          "sha256": "efd07f4e3d675588c90cec4a424841675964f5f6e6c26b016efb5995813f6bc6",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/mom_oc_cancer_history.npy": {
+          "sha256": "403269e0e5d290b1c1e43b77e4ee8b71ad759688594ca00f5eaa89cc53e86a55",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/m_aunt_oc_cancer_history.npy": {
+          "sha256": "84732bd0cb16fad59930264e9fff5575d38f64b4345f1490ff36e56db995e6ee",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/p_aunt_oc_cancer_history.npy": {
+          "sha256": "bc52c7dfd86b93e68d34c20ad7a612ae75b484b846a8b74c9a0abc9f75048f2d",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/m_grandmother_oc_cancer_history.npy": {
+          "sha256": "8482380c31556a718b0b7edb10b95c74b7a4ce2679f6618d80bcea90894c2637",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/p_grantmother_oc_cancer_history.npy": {
+          "sha256": "235b20051ee15c11ec5b4c006c98b45539971e7e2a305ec5360b4cfe91f0df59",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/sister_oc_cancer_history.npy": {
+          "sha256": "4462e9a571f4f037bc12ca358334c4ad72f933f6d09f6e8540ec0ceadd2e18e0",
+          "dtype": "float32",
+          "shape": [
+            1,
+            1
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/hrt_type.npy": {
+          "sha256": "dd948a1517907661318c4e0143289e093e70d7f4cdcadcc86ed5d8876377cacd",
+          "dtype": "float32",
+          "shape": [
+            1,
+            3
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/hrt_duration.npy": {
+          "sha256": "bec8b1c0a1581f2a92460dda0778718aa3f29131116c4cd1b34a30c89f75cb14",
+          "dtype": "float32",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "pred_risk_factors_per_key_dcmtk/hrt_years_ago_stopped.npy": {
+          "sha256": "893b464ba2925782f1c1103e0655fd36327e354635da3059293ddc04f9200b0e",
+          "dtype": "float32",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "image_encoder_out_dcmtk.npy": {
+          "sha256": "81eaa18497e81307bf337b18d72d03927c47097649dce8dd3316348d8c045c8f",
+          "dtype": "float32",
+          "shape": [
+            1,
+            4,
+            512
+          ]
+        },
+        "image_hidden_in_pool_dcmtk.npy": {
+          "sha256": "eeb6c96a3e02590d36bbf0f0bf21b2e3e5038da9411075e29247066f77eb5810",
+          "dtype": "float32",
+          "shape": [
+            1,
+            512
+          ]
+        },
+        "pool_hidden_dcmtk.npy": {
+          "sha256": "14351c36f07d53a5c850898377192569ac61e8e1ed466afd66c8bb9c3e446868",
+          "dtype": "float32",
+          "shape": [
+            1,
+            612
+          ]
+        },
+        "risk_factor_vector_dcmtk.npy": {
+          "sha256": "b83e7211482c2bd1cf9261ef0e6789d31321e577a282f96f54fef35474497676",
+          "dtype": "float32",
+          "shape": [
+            1,
+            100
+          ]
+        },
+        "xai_hidden_dcmtk.npy": {
+          "sha256": "bbe607b0f09d5f38a787febfb560b6d7f59ec2e643632896b5dbcedebae53824",
+          "dtype": "float32",
+          "shape": [
+            1,
+            612
+          ]
+        },
+        "raw_logit_dcmtk.npy": {
+          "sha256": "1b263f5e0b7d2728833a4ff6f49a36fc7a147e3f23846792c468b1cebedf7d3c",
+          "dtype": "float32",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "raw_sigmoid_dcmtk.npy": {
+          "sha256": "5976b77ff52b88993abf6df1f7163c3848804d888ba4b1a8e8a1d1d866bab5ec",
+          "dtype": "float32",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "calibrated_dcmtk.npy": {
+          "sha256": "c594be4a973a35498b34ef949014be3d4ce23d7d83a57e77fd723587ca250b75",
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "predictions_dcmtk.json": {
+          "sha256": "1a603e13b5766a4d2d00274f4f34671defd03ab30ff782b8f14431b0a818c475"
+        },
+        "batch_order_dcmtk.json": {
+          "sha256": "29fb6238ce727930bea6e80a3b50adb4d90384edae3e21de21f967fda7105ae6"
+        }
+      }
+    }
+  }
+}

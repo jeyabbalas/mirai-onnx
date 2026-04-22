@@ -1,0 +1,25 @@
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Local artifacts
+.venv/
+.venv-*/
+.cache/
+
+# Phase 0 inputs that aren't ours to vendor
+mirai_demo_data/
+mirai_demo_data.zip
+demo_prediction*.json
+external/Mirai/demo_prediction*.json
+external/Mirai/mirai_demo_data/
+external/Mirai/mirai_demo_data.zip
+external/Mirai/.cache/
+
+# OS
+.DS_Store

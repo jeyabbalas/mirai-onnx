@@ -1,0 +1,30 @@
+[
+  {
+    "slot": 0,
+    "view": 0,
+    "view_str": "CC",
+    "side": 1,
+    "side_str": "L"
+  },
+  {
+    "slot": 1,
+    "view": 0,
+    "view_str": "CC",
+    "side": 0,
+    "side_str": "R"
+  },
+  {
+    "slot": 2,
+    "view": 1,
+    "view_str": "MLO",
+    "side": 1,
+    "side_str": "L"
+  },
+  {
+    "slot": 3,
+    "view": 1,
+    "view_str": "MLO",
+    "side": 0,
+    "side_str": "R"
+  }
+]
