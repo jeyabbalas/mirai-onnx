@@ -14,6 +14,7 @@ PROJECT_ROOT = HERE.parents[1]
 FIXTURES_DIR = PROJECT_ROOT / "tests" / "reference" / "fixtures"
 MODELS_DIR = PROJECT_ROOT / "models"
 IMAGE_ENCODER_ONNX = MODELS_DIR / "image_encoder.onnx"
+RISK_MODEL_ONNX = MODELS_DIR / "risk_model.onnx"
 
 # PyTorch wrapper reproduces the captured fixture bit-for-bit (same torch graph).
 ATOL_TORCH = 0.0
