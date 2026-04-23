@@ -12,6 +12,9 @@ __pycache__/
 .venv-*/
 .cache/
 
+# Phase 2+ ONNX export artifacts (reproducible from scripts + pinned snapshot SHAs)
+models/
+
 # Phase 0 inputs that aren't ours to vendor
 mirai_demo_data/
 mirai_demo_data.zip

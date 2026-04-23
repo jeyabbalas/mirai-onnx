@@ -16,7 +16,17 @@ This document covers the export of three artefacts:
 
 Out of scope: TypeScript preprocessing (Phase 6), TypeScript risk-factor vectorizer (Phase 7), browser wiring (Phase 8), Docker cross-machine reference (deferred).
 
-Audience: the executor agent (or engineer) implementing Phase 2/3/4, plus the reviewer. The tolerances here follow Phase 0's `tests/reference/conftest.py:22-24`: `ATOL_FP32 = 1e-6`, `ATOL_FP64 = 1e-9`, `RTOL = 0`. Do not loosen them.
+Audience: the executor agent (or engineer) implementing Phase 2/3/4, plus the reviewer.
+
+**Two-track tolerances.** Phase 2 (2026-04-23) established empirically that torch → ONNX → ORT cannot reproduce the Phase 0 fixtures at `ATOL_FP32 = 1e-6`. The PyTorch wrapper forward (same torch graph that captured Phase 0) remains bit-exact, but ORT's MLAS kernels round differently from PyTorch's ATen kernels by up to ~1 ULP on fp32 features. This is independent of `do_constant_folding` and every `ort.GraphOptimizationLevel` setting. Tolerances are therefore split:
+
+| Validation stage | Tolerance | Rationale |
+|---|---|---|
+| Phase 0 pytorch-internal tensors (pool_hidden, raw_logit, etc.) | `ATOL_FP32 = 1e-6`, `ATOL_FP64 = 1e-9`, `RTOL = 0` | Same torch version, same machine; bit-exact reachable. |
+| Phase 2/3 **PyTorch export-wrapper** forward vs Phase 0 fixtures | `ATOL_TORCH = 0.0` (exact) | Wrapper is a thin view/slice over the same torch graph. Any deviation is a wrapper bug. |
+| Phase 2/3 **ONNX Runtime (CPU)** session vs Phase 0 fixtures | `ATOL_ORT = 2e-5`, `RTOL = 0` | ≈2× worst observed (9.5e-6 pydicom, 1.05e-5 dcmtk single-outlier on the image encoder). ≤4e-6 relative on features ≤5 magnitude — orders of magnitude below the 4-decimal rounding floor of final predictions. |
+
+Do not loosen these tolerances further without a new empirical measurement and a note in the relevant phase report. See `PHASE_2_REPORT.md` § "Parity — caveat worth flagging" for the measurements that produced the ORT bound.
 
 ---
 
@@ -369,7 +379,9 @@ All refactors live in **new export-wrapper modules** (e.g. `onconet/models/mirai
       "hidden_pre_hazard":{0: "B"},
   }
   ```
-- **Validation after export.** Run `onnx.checker.check_model(model_proto)`; then create an `ort.InferenceSession(..., providers=["CPUExecutionProvider"])` and verify outputs against Phase 0 fixtures with `atol=1e-6, rtol=0` on the same machine that captured them.
+- **Validation after export.** Run `onnx.checker.check_model(model_proto)`; then validate in two stages with the two-track tolerances from §1:
+  1. **PyTorch wrapper forward** vs the Phase 0 fixture: `atol=0.0, rtol=0` (bit-exact). This is the correctness gate for the wrapper code itself — wrapper bugs (wrong slice, missed `.eval()`, mutated storage) show up here.
+  2. **ONNX Runtime CPU session** vs the Phase 0 fixture: `atol=2e-5, rtol=0`. This absorbs intrinsic torch-ATen vs ORT-MLAS kernel-rounding differences. Phase 2 established the bound empirically (9.5e-6 pydicom, 1.05e-5 dcmtk on the image encoder); Phase 3 should run the same two-stage check, and if ORT diff exceeds 2e-5 on the risk model, record the new measurement in `PHASE_3_REPORT.md` rather than silently bumping the tolerance.
 - **Torch version for the export environment.** The capture environment `mirai-py38` (torch 1.9.0) is the reference runner, not the exporter. torch 1.9.0's ONNX exporter is old and lacks many quality-of-life features (e.g. proper `LayerNorm` fusion). Phase 2 should set up a separate venv (e.g. `mirai-export`) with `torch>=2.1` for running `torch.onnx.export`, while continuing to import the same `onconet` package. Snapshot files load fine in either torch version.
 
 ---

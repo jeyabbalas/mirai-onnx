@@ -189,7 +189,9 @@ out = sess.run(None, {"input": preproc_stack_f32})[0]  # (4, 512)
 
 **Automated verification.** `pytest tests/onnx/test_image_encoder.py` parametrized over `["pydicom", "dcmtk"]` asserts:
 - Output shape is `(4, 512)` for a 4-image batch.
-- `np.allclose(out, np.load("image_encoder_out{,_dcmtk}.npy").reshape(4,512), atol=1e-6, rtol=0)` for **same-machine** validation (Phase 0 demonstrated this is achievable). Loosen to `atol=1e-5` only for cross-machine/CI sanity once a Docker reference exists.
+- Two-track tolerances (see `docs/architecture.md` §1 and `PHASE_2_REPORT.md`):
+  - **PyTorch wrapper** forward vs `image_encoder_out{,_dcmtk}.npy` reshaped to `(4,512)`: `atol=0.0, rtol=0` (bit-exact — same torch graph as Phase 0).
+  - **ONNX Runtime (CPU)** session vs the same fixtures: `atol=2e-5, rtol=0`. Phase 2 measured 9.5e-6 pydicom and 1.05e-5 dcmtk (single-outlier element out of 2048). The residual is intrinsic torch-ATen vs ORT-MLAS kernel rounding — independent of `do_constant_folding` and `ort.GraphOptimizationLevel`. Do not loosen beyond `2e-5` without a new empirical measurement and a note in the phase report.
 - The ONNX file is smaller than 200 MB and passes `onnx.checker.check_model`.
 
 **Manual verification.**
@@ -229,11 +231,13 @@ out = sess.run(None, {"input": preproc_stack_f32})[0]  # (4, 512)
    - `dynamic_axes` only on the batch axis `B`.
 3. Validate numerically against Phase 0 fixtures (parametrized over both pydicom and dcmtk variants):
    - Inputs: `img_feats = np.load("image_encoder_out{,_dcmtk}.npy")` (shape `(1, 4, 512)`); `view_seq`/`side_seq` derived from `batch_order{,_dcmtk}.json` (NOT a hardcoded order — for the demo this happens to be `[(CC,L),(CC,R),(MLO,L),(MLO,R)]` but the source of truth is the JSON); `time_seq = zeros((1, 4))`; `rf_vector = zeros((1, 100))`; `rf_known_mask = zeros((1, 100))`.
-   - Expected: `logit ≈ raw_logit{,_dcmtk}.npy` and `hidden_pre_hazard ≈ xai_hidden{,_dcmtk}.npy` (post-relu) OR `pool_hidden{,_dcmtk}.npy` (pre-relu) per the §0.2 decision. Tolerance `atol=1e-6, rtol=0` (same-machine) / `1e-5` (cross-machine).
+   - Expected: `logit ≈ raw_logit{,_dcmtk}.npy` and `hidden_pre_hazard ≈ xai_hidden{,_dcmtk}.npy` (post-relu per the §0.2 decision). Two-track tolerances per `docs/architecture.md` §1:
+     - **PyTorch `RiskModelExport` forward** vs fixture: `atol=0.0, rtol=0` (bit-exact). Wrapper bugs show up here.
+     - **ONNX Runtime (CPU) session** vs fixture: `atol=2e-5, rtol=0` as the default starting bound (established on the image encoder in Phase 2). If the risk model exceeds this, record the actual max abs diff in `PHASE_3_REPORT.md` and discuss before bumping further — do not silently loosen.
 
 **Automated verification.** `pytest tests/onnx/test_risk_model.py` parametrized over `["pydicom", "dcmtk"]`:
 - Graph passes `onnx.checker.check_model`.
-- Running it on the Phase 0 inputs produces outputs within `atol=1e-6` of `raw_logit{,_dcmtk}.npy` and the chosen hidden fixture.
+- Running it on the Phase 0 inputs produces outputs within the two-track tolerances above: PyTorch wrapper `atol=0.0`, ORT `atol=2e-5` (rtol=0) against `raw_logit{,_dcmtk}.npy` and `xai_hidden{,_dcmtk}.npy`.
 - Running it with `rf_vector = real_values, rf_known_mask = ones` gives a `hidden_pre_hazard` whose last 100 entries are bit-for-bit equal to `rf_vector` if exporting pre-relu, or `relu(rf_vector)` if post-relu (proves the blend works).
 - Running it with `rf_vector = zeros, rf_known_mask = zeros` produces a `hidden_pre_hazard` whose last 100 entries equal `risk_factor_vector{,_dcmtk}.npy` (pre-relu) or `relu(risk_factor_vector{,_dcmtk}.npy)` (post-relu). This catches the per-key FC double-call bug if it leaks into export.
 - Per-key FC outputs concatenated into the model-predicted RF block must match the Phase 0 `pred_risk_factors_per_key{,_dcmtk}/<key>.npy` files (after sigmoid / softmax per key, per `risk_factor_key_to_num_class`).
@@ -505,7 +509,7 @@ Future phases must treat MANIFEST as the source of truth and re-validate file ha
 ### 11.3 Agent guardrails
 When handing a phase to Claude Code:
 - **Read `PHASE_0_REPORT.md` and `tests/reference/README.md` before starting any phase.** The four factual corrections to this plan (preproc shape `(3,2048,1664)`, `rf_dim=100`, non-zero `risk_factor_vector`, batch order from `batch_order.json`) are encoded in those files; the plan reflects them, but the fixtures are the source of truth.
-- Pin the tolerance explicitly in the phase's agent prompt (e.g. "must pass `np.allclose(out, fixture, atol=1e-6)` for same-machine, `1e-5` for cross-machine"). Vague "matches closely" drifts.
+- Pin the tolerance explicitly in the phase's agent prompt using the two-track scheme from `docs/architecture.md` §1: **PyTorch wrapper vs fixture `atol=0.0`** (bit-exact — wrapper correctness gate), **ONNX Runtime vs fixture `atol=2e-5`** (intrinsic MLAS-vs-ATen rounding). Vague "matches closely" drifts.
 - Forbid editing any file under `tests/reference/fixtures/`.
 - Require the agent to produce a short `PHASE_N_REPORT.md` listing every file it created/modified and the exact commands it ran.
 
