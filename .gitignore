@@ -27,5 +27,9 @@ external/Mirai/mirai_demo_data/
 external/Mirai/mirai_demo_data.zip
 external/Mirai/.cache/
 
+# Phase 6+ TS build
+node_modules/
+dist/
+
 # OS
 .DS_Store

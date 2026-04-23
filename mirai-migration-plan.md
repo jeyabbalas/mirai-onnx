@@ -322,6 +322,15 @@ out = sess.run(None, {"input": preproc_stack_f32})[0]  # (4, 512)
 
 ## 7. Phase 6 — DICOM → Preprocessed Tensor in TypeScript
 
+**Status: COMPLETE (2026-04-23).** Authoritative record: `PHASE_6_REPORT.md`. Shipped implementation: `src/mirai/preprocess/`. Test suite: `tests/ts/`. New reference fixtures: `tests/reference/fixtures/post_resize/` (int32, `(2048, 1664)`) captured by `scripts/capture_post_resize_fixture.py`.
+
+> **Corrections to this §7 that Phase 6 verified empirically** (the rest of §7 remains good historical context but should be read *through* these corrections):
+>
+> 1. **The demo DICOMs hit the GE VOI LUT branch, not the minmax branch.** Manufacturer is `GE MEDICAL SYSTEMS`, VOI LUT Sequence `(0028,3010)` is present with 3 items (Mirai uses `index=0`). The statement under "Notes / pitfalls" that `dcmtk` and `pydicom` agree pixel-exactly only for the min-max branch is therefore irrelevant here: both paths exercise VOI LUT for the demo, and the 4th-decimal prediction drift between them originates inside that GE path (different LUT-application implementations).
+> 2. **The demo DICOMs are stored as Explicit VR Big Endian** (TS UID `1.2.840.10008.1.2.2`), not little-endian. The TS port of `readPixelDataUint16` must honor endianness from the transfer-syntax UID, not assume LE.
+> 3. **Achieved parity is much tighter than the planned `maxAbsDiff < 1e-3` budget.** Measured bit-exact on DICOM decode, bit-exact on the PIL bilinear resize (Resample.c port), and `~4.77e-7` (single fp32 ULP) end-to-end on the final normalized tensor. Future phases can rely on `src/mirai/preprocess/preprocessDicom` producing a tensor equivalent to `preproc_tensor/*.npy` at fp32 epsilon.
+> 4. **Each per-image output also exposes the `flipped` bit** (align-to-left decision) for downstream code that needs to know whether the image was horizontally mirrored. Flip decisions on the demo: `CC_L=true, CC_R=false, MLO_L=true, MLO_R=false` — the R views are already aligned, L views are flipped so the chest wall ends up on the left.
+
 **Goal.** A pure-TS `preprocessDicom(file: ArrayBuffer): Float32Array` that reproduces the Python preprocessor (**pydicom path** — the dcmtk variant exists in Phase 0 fixtures only for differential debugging; the browser cannot run dcmtk) to within a tight pixel tolerance on the demo images.
 
 **Inputs.** Phase 0 pydicom fixtures: the raw uint16 arrays (`dicom_raw_uint16/{CC,MLO}_{L,R}.npy`) and the final normalized fp32 tensors (`preproc_tensor/{CC,MLO}_{L,R}.npy`, shape `(3, 2048, 1664)`), per view.
@@ -359,7 +368,7 @@ out = sess.run(None, {"input": preproc_stack_f32})[0]  # (4, 512)
 - Endianness: some DICOM transfer syntaxes pack pixels little-endian, others big-endian (rare). `dicom-parser` handles this, but confirm you read the `PixelRepresentation` and `BitsStored` tags correctly.
 - Compressed transfer syntaxes (JPEG 2000, JPEG Lossless) are common and `dicom-parser` alone doesn't decode them — you may need `@cornerstonejs/codec-openjpeg` or similar. The demo DICOMs are uncompressed; check with `dcmdump` before assuming.
 - The Python pydicom path uses `pillow=True` mode `'I'` (32-bit signed) for the resize input — it preserves full dynamic range. **Don't truncate to uint16 before resizing** in the TS port; Phase 0's pydicom fixtures preserve the full range through the resize step, and matching that is required to hit `1e-3` post-norm tolerance.
-- `dcmtk` and `pydicom` agree to the pixel on the demo images *only* for the min-max branch. The two paths' Phase 0 predictions diverge at the 4th decimal (e.g. Year 1: 0.0314 vs 0.0298); the TS port targets the pydicom path, so dcmtk-parity is a non-goal here.
+- **Corrected in Phase 6:** the demo DICOMs hit the GE VOI LUT branch on both pydicom and dcmtk decode paths — not the minmax branch. The two paths' Phase 0 predictions diverge at the 4th decimal (e.g. Year 1: 0.0314 vs 0.0298) because pydicom's `apply_voi_lut` (clip-then-lookup) differs subtly from dcmtk's `dcmj2pnm --use-voi-lut 1` output; both are nonetheless applying the GE VOI LUT Sequence, not minmax windowing. The TS port targets the pydicom path, so dcmtk-parity is a non-goal here.
 
 ---
 
@@ -522,9 +531,10 @@ When handing a phase to Claude Code:
 | `risk_factor_vector` from ONNX is all zeros while Python has non-zero values | Either you skipped the model-predicted RF path, or you fed `rf_known_mask = ones` (which masks them out) | Phase 3 — for the demo, both `rf_vector` and `rf_known_mask` must be zeros to invoke the model-predicted path |
 | Risk model off only when RFs are supplied | `rf_known_mask` not broadcasted the same way as in Python | Phase 3 — shapes of `rf_vector`, `rf_known_mask` |
 | Slot 0 holds the wrong (view, side) | Hardcoded `R-CC, R-MLO, L-CC, L-MLO` instead of reading `batch_order.json` | Phases 3/5/8 — the demo's actual order is `[(CC,L),(CC,R),(MLO,L),(MLO,R)]`, driven by CLI input order |
-| TS preprocessing off by ~1 unit pre-norm | Bilinear resize vs PIL bilinear | Phase 6 — consider using the exact PIL formula (fp32 intermediate) |
+| TS preprocessing off by ~1 unit pre-norm | Bilinear resize vs PIL bilinear | Phase 6 — consider using the exact PIL formula (fp32 intermediate). **Phase 6's `src/mirai/preprocess/resize.ts` is a byte-exact port of `Pillow/src/libImaging/Resample.c` `precompute_coeffs` + separable 32bpc passes; do not "simplify" it to naive 2×2 bilinear on downscale.** |
 | TS preproc tensor has wrong dimensions | Used `(1664, 2048)` instead of `(2048, 1664)` for resize H,W | Phase 6 — `Resize((height=2048, width=1664))` |
-| TS predictions off only for non-GE images | VOI LUT path ported incorrectly | Phase 6 — compare uint16 outputs to fixture for every device type |
+| TS predictions off only for non-GE images | VOI LUT path ported incorrectly | Phase 6 — compare uint16 outputs to fixture for every device type. **Demo DICOMs are GE + VOI LUT**; the non-GE minmax/auto branches of `src/mirai/preprocess/dicom.ts` are implemented but unexercised by Phase 0 fixtures. |
+| TS uint16 decode off for GE demos only | Transfer syntax is Explicit VR Big Endian (`1.2.840.10008.1.2.2`); pixel data read as little-endian by mistake | Phase 6 — `readPixelDataUint16` dispatches on TS UID; do not hardcode LE. |
 | RF vector looks correct but risk prediction is wrong | Feature order mismatched | Phase 7 — diff `get_feature_names()` vs TS order; cross-check against Phase 0 MANIFEST `risk_factor_keys` |
 | Browser ONNX 10× slower than expected | WebGPU falling back to WASM for one op | Phase 8 — check `ort.env.webgpu.profilingMode = 'default'` and the console |
 | `pip install` fails on Apple Silicon Python 3.8 / torch 1.9.0 | No arm64 wheel; pylibjpeg wheels mislabeled (filename says x86_64 but binary is arm64) | `tests/reference/ENV.md` — use `osx-64` conda env under Rosetta; uninstall all 4 pylibjpeg packages |

@@ -14,7 +14,9 @@ This document covers the export of three artefacts:
 - `risk_model.onnx` — four-view transformer + pool + hazard head, with the XAI embedding as a named output (Phase 3).
 - `calibrator.json` — the 5-year Platt-scaling parameters, language-neutral (Phase 4).
 
-Out of scope: TypeScript preprocessing (Phase 6), TypeScript risk-factor vectorizer (Phase 7), browser wiring (Phase 8), Docker cross-machine reference (deferred).
+Out of scope for this doc: TypeScript risk-factor vectorizer (Phase 7), browser wiring (Phase 8), Docker cross-machine reference (deferred).
+
+**Phase 6 (TypeScript preprocessing) is now complete** and lives in `src/mirai/preprocess/`. It is not described further here because it reuses the shape table below (the TS output is byte-equivalent to `preproc_tensor/*.npy` at fp32 ULP) and its design notes live in `PHASE_6_REPORT.md`. The key empirical fact this doc needs to carry: **the demo DICOMs hit the GE VOI LUT branch of `onconet/utils/dicom.py:dicom_to_arr` (not the minmax branch)** — `apply_modality_lut` (identity for slope=1/intercept=0) → `apply_voi_lut(index=0)` → `*= 2^(16 - num_bits_per_entry)` in uint16 with wraparound on overflow → cast to uint16. The transfer syntax of all four demo DICOMs is Explicit VR Big Endian (`1.2.840.10008.1.2.2`).
 
 Audience: the executor agent (or engineer) implementing Phase 2/3/4, plus the reviewer.
 
@@ -25,8 +27,11 @@ Audience: the executor agent (or engineer) implementing Phase 2/3/4, plus the re
 | Phase 0 pytorch-internal tensors (pool_hidden, raw_logit, etc.) | `ATOL_FP32 = 1e-6`, `ATOL_FP64 = 1e-9`, `RTOL = 0` | Same torch version, same machine; bit-exact reachable. |
 | Phase 2/3 **PyTorch export-wrapper** forward vs Phase 0 fixtures | `ATOL_TORCH = 0.0` (exact) | Wrapper is a thin view/slice over the same torch graph. Any deviation is a wrapper bug. |
 | Phase 2/3 **ONNX Runtime (CPU)** session vs Phase 0 fixtures | `ATOL_ORT = 2e-5`, `RTOL = 0` | ≈2× worst observed (9.5e-6 pydicom, 1.05e-5 dcmtk single-outlier on the image encoder). ≤4e-6 relative on features ≤5 magnitude — orders of magnitude below the 4-decimal rounding floor of final predictions. |
+| Phase 6 TS **DICOM decode** uint16 vs `dicom_raw_uint16/*.npy` | exact (0 mismatched pixels) | Deterministic arithmetic — a careful port of `dicom_to_arr`'s GE VOI LUT branch hits zero drift. |
+| Phase 6 TS **PIL bilinear resize** int32 vs new `post_resize/*.npy` fixtures | exact (0 mismatched pixels) | The TS resize is a byte-faithful port of `Pillow/src/libImaging/Resample.c` `precompute_coeffs` + separable 32bpc passes. `post_resize/{CC,MLO}_{L,R}.npy` are captured by `scripts/capture_post_resize_fixture.py` running `torchvision.transforms.Resize((2048,1664))` on the Phase 0 uint16 arrays. |
+| Phase 6 TS **`preprocessDicom`** fp32 end-to-end vs `preproc_tensor/*.npy` | measured `~4.77e-7` (single fp32 ULP) — treat `1e-6` as the floor; any looser drift is a real bug | The only non-exact stage is `(x - 7047.99) / 12005.5` in fp32, which rounds at ULP. Plan originally budgeted `1e-3`; do not use that as a license for sloppy future ports. |
 
-Do not loosen these tolerances further without a new empirical measurement and a note in the relevant phase report. See `PHASE_2_REPORT.md` § "Parity — caveat worth flagging" for the measurements that produced the ORT bound.
+Do not loosen these tolerances further without a new empirical measurement and a note in the relevant phase report. See `PHASE_2_REPORT.md` § "Parity — caveat worth flagging" for the measurements that produced the ORT bound and `PHASE_6_REPORT.md` § "Parity measurements" for the TS bounds.
 
 ---
 

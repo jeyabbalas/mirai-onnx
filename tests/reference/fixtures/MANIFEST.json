@@ -622,6 +622,38 @@
         },
         "batch_order.json": {
           "sha256": "29fb6238ce727930bea6e80a3b50adb4d90384edae3e21de21f967fda7105ae6"
+        },
+        "post_resize/CC_L.npy": {
+          "sha256": "51a89880f7ae68ed7e88bd43057980709ed48400cf3b22815ff47042532f95fc",
+          "dtype": "int32",
+          "shape": [
+            2048,
+            1664
+          ]
+        },
+        "post_resize/CC_R.npy": {
+          "sha256": "1cb1950325d8410a97fed4224e69bc4df4618c1da0e10019e5ed4382b9f30764",
+          "dtype": "int32",
+          "shape": [
+            2048,
+            1664
+          ]
+        },
+        "post_resize/MLO_L.npy": {
+          "sha256": "adfc8f9fe8e7e99f2a507f2acd5f544edbcc9460156718847130450f68fc4120",
+          "dtype": "int32",
+          "shape": [
+            2048,
+            1664
+          ]
+        },
+        "post_resize/MLO_R.npy": {
+          "sha256": "209afd60e23827cdd761972365a5ed9b63ac5a3e787724aea00f447e3291f8ed",
+          "dtype": "int32",
+          "shape": [
+            2048,
+            1664
+          ]
         }
       }
     },
@@ -1148,6 +1180,38 @@
         },
         "batch_order_dcmtk.json": {
           "sha256": "29fb6238ce727930bea6e80a3b50adb4d90384edae3e21de21f967fda7105ae6"
+        },
+        "post_resize_dcmtk/CC_L.npy": {
+          "sha256": "3eae892cb55987f5135ef29c1925b4df7530b47e690b5659904c611f461d6179",
+          "dtype": "int32",
+          "shape": [
+            2048,
+            1664
+          ]
+        },
+        "post_resize_dcmtk/CC_R.npy": {
+          "sha256": "91ec6fa1ba2229819ed82788dc21a6785d87f61e9fd641d2073de25882d14e68",
+          "dtype": "int32",
+          "shape": [
+            2048,
+            1664
+          ]
+        },
+        "post_resize_dcmtk/MLO_L.npy": {
+          "sha256": "a7fa5ba12f48ce50653ed037b2884355803986a478a0ea43d68d3660f1def2b3",
+          "dtype": "int32",
+          "shape": [
+            2048,
+            1664
+          ]
+        },
+        "post_resize_dcmtk/MLO_R.npy": {
+          "sha256": "6f7ab2a11dc38121ed46328e005b4d83653dfb8c8fa7cdc4d8451a71e0a49b89",
+          "dtype": "int32",
+          "shape": [
+            2048,
+            1664
+          ]
         }
       }
     }
