@@ -23,17 +23,35 @@ import {
 } from "mirai-onnx-web";
 import { drawHeatmap } from "./render.js";
 
-// Do NOT set ort.env.wasm.wasmPaths. In dev, Vite serves the ORT assets
-// straight from /node_modules/onnxruntime-web/dist/; in prod, Vite sees
-// `new URL("./ort-wasm-simd-threaded.jsep.wasm", import.meta.url)` inside
-// the ORT bundle and copies the .wasm into dist/assets/ with the correct
-// hashed URL. Either way, ORT's default "resolve relative to the bundle's
-// import.meta.url" path is what works — setting wasmPaths to anything else
-// broke WebGPU init with "both async and sync fetching of the wasm failed".
-
 // Vite injects `import.meta.env.BASE_URL` with a trailing slash: "/" in dev,
 // "/mirai-onnx/" under the Pages workflow (vite.config.ts reads DEPLOY_BASE_URL).
 const BASE = import.meta.env.BASE_URL;
+
+// Production-only: point ORT at the standalone `ort-wasm-simd-threaded*.{mjs,wasm}`
+// files that link-models.mjs copies into public/ort/ (Vite propagates them to
+// dist/ort/).
+//
+// Why this is necessary in prod: `import * as ort` resolves to
+// `ort.bundle.min.mjs`, and Vite's production build inlines that into our
+// main entry. ORT's Emscripten pthread spawner reads `import.meta.url` at
+// runtime and uses it as the Worker URL — so when the ORT code is bundled
+// into our main chunk, `import.meta.url` becomes `/…/assets/index-<hash>.js`.
+// The browser then tries to run the entire app bundle as a Web Worker, which
+// crashes immediately in Vite's modulepreload polyfill (no `document` in
+// worker scope — Uncaught ReferenceError: document is not defined).
+//
+// Pointing wasmPaths at the standalone .mjs fixes this: inside those raw
+// Emscripten modules `import.meta.url` is the .mjs itself, which is what the
+// em-pthread Worker needs. WebGPU is unaffected (it doesn't use pthread
+// workers for inference).
+//
+// Why we SKIP this in dev: Vite's dev server serves ORT as a real ES module
+// from /node_modules/onnxruntime-web/dist/ort.bundle.min.mjs — already at the
+// correct URL for `import.meta.url`. Setting wasmPaths to "/ort/..." in dev
+// fails because Vite refuses module imports of files under public/.
+if (import.meta.env.PROD) {
+  ort.env.wasm.wasmPaths = `${BASE}ort/`;
+}
 const MODEL_URLS = {
   encoder: `${BASE}models/image_encoder.onnx`,
   risk: `${BASE}models/risk_model.onnx`,
