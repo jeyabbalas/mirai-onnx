@@ -1,22 +1,37 @@
 {
   "name": "mirai-onnx-web",
-  "version": "0.1.0-phase6",
-  "description": "TypeScript preprocessing pipeline for the Mirai breast-cancer risk model, feeding image_encoder.onnx",
+  "version": "0.1.0",
+  "description": "Browser-friendly TypeScript pipeline for the Mirai breast-cancer risk model. Runs the ONNX graphs exported from the original PyTorch model, reproducing Python predictions bit-equal at 4 decimals.",
   "private": true,
   "type": "module",
+  "main": "./src/mirai/index.ts",
+  "exports": {
+    ".": "./src/mirai/index.ts"
+  },
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "pipeline:ts": "tsx scripts/run_ts_pipeline.ts",
+    "bench": "tsx scripts/bench.ts",
+    "demo:install": "npm --prefix demo install",
+    "demo:dev": "npm --prefix demo run dev",
+    "demo:build": "npm --prefix demo run build"
   },
   "dependencies": {
     "dicom-parser": "^1.8.21"
   },
+  "optionalDependencies": {
+    "onnxruntime-web": "^1.19.0"
+  },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "onnxruntime-node": "^1.19.0",
+    "onnxruntime-web": "^1.19.0",
+    "tsx": "^4.7.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
   }

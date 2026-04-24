@@ -21,5 +21,5 @@
     "rootDir": ".",
     "declaration": false
   },
-  "include": ["src/**/*.ts", "tests/ts/**/*.ts"]
+  "include": ["src/**/*.ts", "tests/ts/**/*.ts", "scripts/**/*.ts"]
 }

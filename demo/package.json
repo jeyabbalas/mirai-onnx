@@ -1,0 +1,21 @@
+{
+  "name": "mirai-demo",
+  "version": "0.1.0",
+  "description": "Browser demo for mirai-onnx-web: WebGPU/WASM in-browser 5-year risk prediction from 4 DICOMs.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "link-models": "node scripts/link-models.mjs",
+    "dev": "npm run link-models && vite",
+    "build": "npm run link-models && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "mirai-onnx-web": "file:..",
+    "onnxruntime-web": "^1.19.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vite": "^5.4.0"
+  }
+}

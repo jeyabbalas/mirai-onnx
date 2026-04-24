@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mirai — in-browser 5-year breast-cancer risk</title>
+    <style>
+      :root {
+        --fg: #1a1a1a;
+        --muted: #666;
+        --accent: #2a6fdb;
+        --bg: #fafafa;
+        --panel: #ffffff;
+        --border: #dadada;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        color: var(--fg);
+        background: var(--bg);
+        line-height: 1.4;
+      }
+      h1 { margin: 0 0 4px 0; font-size: 22px; }
+      h2 { margin: 20px 0 8px 0; font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+      .layout { max-width: 1100px; margin: 0 auto; }
+      .subtitle { color: var(--muted); margin: 0 0 16px 0; font-size: 14px; }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      button {
+        padding: 6px 12px;
+        font-size: 14px;
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      button.secondary { background: #eee; color: var(--fg); }
+      input[type="file"], input[type="number"], input[type="text"], select {
+        font-family: inherit;
+        font-size: 13px;
+        padding: 4px 6px;
+        border: 1px solid var(--border);
+        border-radius: 3px;
+      }
+      label { display: inline-block; min-width: 140px; font-size: 13px; }
+      table { border-collapse: collapse; font-family: var(--mono); font-size: 13px; }
+      th, td { padding: 4px 10px; border: 1px solid var(--border); text-align: right; }
+      th { background: #f0f0f0; text-align: center; }
+      td:first-child, th:first-child { text-align: left; }
+      #status { font-family: var(--mono); font-size: 13px; white-space: pre-wrap; color: var(--muted); }
+      #status.error { color: #c00; }
+      .tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-family: var(--mono);
+        font-size: 12px;
+        background: #eef3fa;
+        color: var(--accent);
+      }
+      #heatmap { border: 1px solid var(--border); image-rendering: pixelated; }
+      .dropzone {
+        border: 2px dashed var(--border);
+        border-radius: 6px;
+        padding: 24px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .dropzone.over { border-color: var(--accent); color: var(--accent); }
+      .file-list { font-family: var(--mono); font-size: 12px; margin-top: 6px; color: var(--muted); }
+      code { font-family: var(--mono); background: #eee; padding: 1px 4px; border-radius: 2px; }
+      footer { color: var(--muted); font-size: 12px; margin-top: 20px; text-align: center; }
+      footer a { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <h1>Mirai — 5-year breast-cancer risk</h1>
+      <p class="subtitle">
+        In-browser inference of the <a href="https://github.com/reginabarzilaygroup/Mirai" target="_blank" rel="noopener">Mirai</a>
+        model via ONNX Runtime Web. Four mammogram DICOMs go in, five calibrated year-hazards plus a 612-dim explainability embedding come out — no data leaves the browser.
+      </p>
+
+      <div class="panel">
+        <h2>1. Input</h2>
+        <div id="dropzone" class="dropzone">
+          Drop 4 DICOMs here (L-CC, R-CC, L-MLO, R-MLO) or
+          <input type="file" id="file-input" multiple accept=".dcm,application/dicom" />
+          <div>or <button id="load-demo" class="secondary" type="button">Load bundled demo DICOMs</button></div>
+          <div class="file-list" id="file-list"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>2. Risk factors (optional)</h2>
+        <div>
+          <label>Age (years)</label>
+          <input type="number" id="rf-age" min="18" max="100" step="1" placeholder="unknown" />
+        </div>
+        <div>
+          <label>Density (BI-RADS)</label>
+          <select id="rf-density">
+            <option value="">unknown</option>
+            <option value="1">1 — almost entirely fatty</option>
+            <option value="2">2 — scattered fibroglandular</option>
+            <option value="3">3 — heterogeneously dense</option>
+            <option value="4">4 — extremely dense</option>
+          </select>
+        </div>
+        <div>
+          <label>Family history</label>
+          <input type="checkbox" id="rf-famhist" /> 1st-degree relative with breast cancer
+        </div>
+        <p class="subtitle" style="margin-top:8px">
+          Missing keys fall back to the model-predicted risk-factor path (same as the Python demo).
+        </p>
+      </div>
+
+      <div class="panel">
+        <h2>3. Run</h2>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+          <label style="min-width:auto">Execution provider</label>
+          <select id="ep-select">
+            <option value="webgpu">WebGPU (falls back to WASM)</option>
+            <option value="wasm">WASM only</option>
+          </select>
+          <button id="run-btn" type="button" disabled>Run prediction</button>
+          <button id="bench-btn" class="secondary" type="button" disabled>Benchmark (10 iters)</button>
+          <span class="tag" id="ep-tag">EP: —</span>
+          <span class="tag" id="threads-tag">threads: —</span>
+        </div>
+        <div id="status" style="margin-top:10px">Waiting for DICOMs…</div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>Predictions</h2>
+          <table id="pred-table">
+            <thead><tr><th>year</th><th>rounded (4dp)</th><th>calibrated (fp64)</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <h2>Slot order</h2>
+          <table id="slots-table">
+            <thead><tr><th>slot</th><th>view</th><th>side</th><th>flipped</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>XAI embedding (612-dim, post-ReLU)</h2>
+        <canvas id="heatmap" width="540" height="476"></canvas>
+        <div style="margin-top:8px; font-size:12px; color:var(--muted)">
+          Laid out as 34 rows × 18 cols (= 612). Darker = larger activation. First 512 dims are image features; last 100 are the risk-factor block.
+        </div>
+        <div style="margin-top:8px">
+          <button id="download-btn" class="secondary" type="button" disabled>Download embedding as JSON</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Stage timings</h2>
+        <table id="timings-table">
+          <thead><tr><th>stage</th><th>last run (ms)</th><th>p50 (ms)</th><th>p95 (ms)</th><th>mean (ms)</th><th>n</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <footer>
+        <span id="footer-version">modelVersion: —</span> ·
+        <a href="https://github.com/reginabarzilaygroup/Mirai" target="_blank" rel="noopener">Mirai (upstream)</a> ·
+        <a href="../docs/LIMITATIONS.md">Known limitations</a>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
