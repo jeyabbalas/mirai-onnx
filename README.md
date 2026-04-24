@@ -1,4 +1,4 @@
-# mirai-onnx-web
+# mirai-onnx
 
 Browser/Node-friendly TypeScript pipeline for the [Mirai](https://github.com/reginabarzilaygroup/Mirai) 5-year mammogram-based breast-cancer risk model. Runs the ONNX graphs exported from the original PyTorch model and reproduces Python predictions bit-equal at 4 decimal places.
 
@@ -9,6 +9,12 @@ Browser/Node-friendly TypeScript pipeline for the [Mirai](https://github.com/reg
 - **Privacy-preserving** — everything runs client-side; DICOMs never leave the browser.
 
 Status: Phase 9 complete (2026-04-24). Nine-phase migration log in `PHASE_0_REPORT.md` through `PHASE_9_REPORT.md`.
+
+## Live demo
+
+A hosted build of the browser demo runs at <https://jeyabbalas.github.io/mirai-onnx/>. Click **Load bundled demo DICOMs** to run the end-to-end pipeline — four mammogram DICOMs, ONNX image encoder, risk model, calibration — entirely in the browser. No data leaves your machine. WebGPU on Chrome / Edge / Safari 17+ gives the fastest path; the demo falls back to threaded WASM (enabled via a `coi-serviceworker` that injects COOP/COEP headers) elsewhere.
+
+Deployment is automated from `.github/workflows/deploy-pages.yml`; models and demo DICOMs are downloaded at build time from a pinned GitHub Release (`assets-v0.1.0`).
 
 ## Quick start — Node
 

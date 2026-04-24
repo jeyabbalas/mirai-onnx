@@ -1,0 +1,84 @@
+name: Deploy demo to Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'demo/**'
+      - 'src/mirai/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+    inputs:
+      asset_tag:
+        description: 'Release tag holding models + demo DICOMs'
+        required: false
+        default: 'assets-v0.1.0'
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            demo/package-lock.json
+
+      # Both installs are needed: root supplies onnxruntime-web (consumed by
+      # demo/scripts/link-models.mjs via the file:.. package), demo supplies
+      # Vite, TS, and coi-serviceworker.
+      - run: npm ci
+      - run: npm --prefix demo ci
+
+      - name: Download model + DICOM assets from Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ASSET_TAG: ${{ inputs.asset_tag || 'assets-v0.1.0' }}
+        run: |
+          mkdir -p models mirai_demo_data
+          gh release download "$ASSET_TAG" \
+            --repo "${{ github.repository }}" \
+            --pattern 'image_encoder.onnx' \
+            --pattern 'risk_model.onnx' \
+            --pattern 'calibrator.json' \
+            --dir models
+          gh release download "$ASSET_TAG" \
+            --repo "${{ github.repository }}" \
+            --pattern 'ccl1.dcm' \
+            --pattern 'ccr1.dcm' \
+            --pattern 'mlol2.dcm' \
+            --pattern 'mlor2.dcm' \
+            --dir mirai_demo_data
+
+      - run: npm --prefix demo run build:pages
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

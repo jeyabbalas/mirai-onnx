@@ -55,7 +55,24 @@ function copyOrtWasm() {
   console.log(`[link-models] copied onnxruntime-web WASM assets → public/ort/`);
 }
 
+function copyCoiServiceWorker() {
+  // coi-serviceworker enables COOP/COEP via a service worker on hosts that
+  // can't set response headers (GH Pages). Its npm package lives in the
+  // demo's own node_modules — unlike onnxruntime-web which sits at the repo
+  // root's node_modules because it's pulled in through the file:.. package.
+  const pkgDir = path.join(DEMO_ROOT, "node_modules", "coi-serviceworker");
+  const src = path.join(pkgDir, "coi-serviceworker.min.js");
+  const dst = path.join(PUBLIC_DIR, "coi-serviceworker.min.js");
+  if (!fs.existsSync(src)) {
+    console.warn(`[link-models] skip coi-serviceworker: ${src} not found — run 'npm install' in demo/ first`);
+    return;
+  }
+  fs.copyFileSync(src, dst);
+  console.log(`[link-models] copied coi-serviceworker.min.js → public/`);
+}
+
 fs.mkdirSync(PUBLIC_DIR, { recursive: true });
 linkInto(path.join(REPO_ROOT, "models"), "models");
 linkInto(path.join(REPO_ROOT, "mirai_demo_data"), "sample");
 copyOrtWasm();
+copyCoiServiceWorker();

@@ -31,11 +31,14 @@ import { drawHeatmap } from "./render.js";
 // import.meta.url" path is what works — setting wasmPaths to anything else
 // broke WebGPU init with "both async and sync fetching of the wasm failed".
 
+// Vite injects `import.meta.env.BASE_URL` with a trailing slash: "/" in dev,
+// "/mirai-onnx/" under the Pages workflow (vite.config.ts reads DEPLOY_BASE_URL).
+const BASE = import.meta.env.BASE_URL;
 const MODEL_URLS = {
-  encoder: "/models/image_encoder.onnx",
-  risk: "/models/risk_model.onnx",
+  encoder: `${BASE}models/image_encoder.onnx`,
+  risk: `${BASE}models/risk_model.onnx`,
 } as const;
-const CALIBRATOR_URL = "/models/calibrator.json";
+const CALIBRATOR_URL = `${BASE}models/calibrator.json`;
 const SAMPLE_FILES = ["ccl1.dcm", "ccr1.dcm", "mlol2.dcm", "mlor2.dcm"] as const;
 
 const STAGES: MiraiStage[] = ["preprocess", "encoder", "risk", "calibrate", "total"];
@@ -278,7 +281,7 @@ async function onLoadDemo(): Promise<void> {
   try {
     const files: File[] = [];
     for (const name of SAMPLE_FILES) {
-      const resp = await fetch(`/sample/${name}`);
+      const resp = await fetch(`${BASE}sample/${name}`);
       if (!resp.ok) throw new Error(`/sample/${name}: ${resp.status}`);
       const blob = await resp.blob();
       files.push(new File([blob], name, { type: "application/dicom" }));

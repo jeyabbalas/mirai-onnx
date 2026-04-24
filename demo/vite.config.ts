@@ -10,6 +10,8 @@ const crossOriginIsolationHeaders = {
 };
 
 export default defineConfig({
+  // `/` for local dev; `/mirai-onnx/` under the Pages workflow (via build:pages).
+  base: process.env.DEPLOY_BASE_URL ?? "/",
   server: {
     headers: crossOriginIsolationHeaders,
     // The demo links mirai-onnx-web via `file:..`, which makes the source

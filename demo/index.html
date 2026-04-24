@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mirai — in-browser 5-year breast-cancer risk</title>
+    <!-- Registers a service worker that injects COOP/COEP response headers so
+         SharedArrayBuffer is available on hosts that can't set them (GH Pages).
+         Relative src resolves under both "/" (dev) and "/mirai-onnx/" (Pages). -->
+    <script src="coi-serviceworker.min.js" defer></script>
     <style>
       :root {
         --fg: #1a1a1a;
@@ -187,7 +191,7 @@
       <footer>
         <span id="footer-version">modelVersion: —</span> ·
         <a href="https://github.com/reginabarzilaygroup/Mirai" target="_blank" rel="noopener">Mirai (upstream)</a> ·
-        <a href="../docs/LIMITATIONS.md">Known limitations</a>
+        <a href="https://github.com/jeyabbalas/mirai-onnx/blob/main/docs/LIMITATIONS.md" target="_blank" rel="noopener">Known limitations</a>
       </footer>
     </div>
     <script type="module" src="/src/main.ts"></script>
