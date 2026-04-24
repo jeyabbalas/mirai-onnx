@@ -6,8 +6,13 @@
     <title>Mirai — in-browser 5-year breast-cancer risk</title>
     <!-- Registers a service worker that injects COOP/COEP response headers so
          SharedArrayBuffer is available on hosts that can't set them (GH Pages).
-         Relative src resolves under both "/" (dev) and "/mirai-onnx/" (Pages). -->
-    <script src="coi-serviceworker.min.js" defer></script>
+         Relative src resolves under both "/" (dev) and "/mirai-onnx/" (Pages).
+         IMPORTANT: no `defer`. coi-serviceworker uses `document.currentScript.src`
+         to self-identify; with `defer`, currentScript can point at the next
+         `<script type="module">` instead, which causes the browser to try to
+         install the app bundle AS the service worker — crashing at the first
+         `document.*` reference ("document is not defined"). -->
+    <script src="coi-serviceworker.min.js"></script>
     <style>
       :root {
         --fg: #1a1a1a;
