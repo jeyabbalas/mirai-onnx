@@ -27,10 +27,14 @@ export const MIRAI_MODEL_VERSION = "0.14.1";
 // Minimal structural types that both onnxruntime-node and onnxruntime-web satisfy, so this
 // module stays backend-agnostic. Phase 9's browser entry will inject onnxruntime-web
 // sessions through the same shape; no imports from either ORT package belong here.
+// getData is present on both packages (inherited from onnxruntime-common) and is what
+// actually forces the WebGPU→CPU copy; on CPU-only backends it resolves immediately
+// with the same array that .data exposes.
 export interface OrtTensor {
   readonly data: unknown;
   readonly dims: readonly number[];
   readonly type: string;
+  getData?(releaseData?: boolean): Promise<unknown>;
 }
 
 export interface OrtSession {
@@ -100,12 +104,12 @@ function stackEncoderInput(images: ReadonlyArray<Float32Array>): Float32Array {
   return out;
 }
 
-function expectTensor(
+async function expectTensor(
   t: OrtTensor | undefined,
   name: string,
   expectedType: string,
   expectedDims: readonly number[],
-): Float32Array {
+): Promise<Float32Array> {
   if (!t) {
     throw new Error(`runMirai: missing output '${name}'`);
   }
@@ -117,10 +121,16 @@ function expectTensor(
       `runMirai: output '${name}' dims ${JSON.stringify(t.dims)}, expected ${JSON.stringify(expectedDims)}`,
     );
   }
-  if (!(t.data instanceof Float32Array)) {
+  // Use getData() when available: onnxruntime-web's WebGPU EP returns tensors whose
+  // .data is either a zero-filled placeholder or a one-call-stale copy until the
+  // GPU→CPU download actually completes. getData() awaits the download. On
+  // onnxruntime-node and on WASM EP the data is already on CPU, so getData()
+  // resolves immediately with the same array .data exposes.
+  const data = typeof t.getData === "function" ? await t.getData() : t.data;
+  if (!(data instanceof Float32Array)) {
     throw new Error(`runMirai: output '${name}' data is not a Float32Array`);
   }
-  return t.data;
+  return data;
 }
 
 function round4dp(x: number): number {
@@ -162,7 +172,7 @@ export async function runMirai(
   );
   const tEnc = onStage ? performance.now() : 0;
   const encoderOut = await sessions.encoder.run({ [ENCODER_INPUT_NAME]: encoderInput });
-  const encoderFeats = expectTensor(
+  const encoderFeats = await expectTensor(
     encoderOut[ENCODER_OUTPUT_NAME],
     ENCODER_OUTPUT_NAME,
     "float32",
@@ -202,8 +212,10 @@ export async function runMirai(
     rf_vector: new sessions.Tensor("float32", rf.vector, [1, RF_DIM_EXPECTED]),
     rf_known_mask: new sessions.Tensor("float32", rf.knownMask, [1, RF_DIM_EXPECTED]),
   });
-  const logitFlat = expectTensor(riskOut[RISK_OUTPUT_LOGIT], RISK_OUTPUT_LOGIT, "float32", [1, N_YEARS]);
-  const hiddenFlat = expectTensor(riskOut[RISK_OUTPUT_HIDDEN], RISK_OUTPUT_HIDDEN, "float32", [1, HIDDEN_DIM]);
+  const [logitFlat, hiddenFlat] = await Promise.all([
+    expectTensor(riskOut[RISK_OUTPUT_LOGIT], RISK_OUTPUT_LOGIT, "float32", [1, N_YEARS]),
+    expectTensor(riskOut[RISK_OUTPUT_HIDDEN], RISK_OUTPUT_HIDDEN, "float32", [1, HIDDEN_DIM]),
+  ]);
 
   // Copy out of ORT-owned buffers so the result owns independent storage and does not
   // hold a session reference alive (session can be disposed after run returns).

@@ -63,6 +63,11 @@ function buildSessionOptions(opts?: CreateWebSessionsOptions): Record<string, un
   return {
     executionProviders: preferWebGPU ? ["webgpu", "wasm"] : ["wasm"],
     graphOptimizationLevel: "all",
+    // Ask JSEP to land outputs in CPU memory. Not sufficient on its own — the
+    // runMirai read path also calls tensor.getData() to force the GPU→CPU
+    // copy to complete before the data is consumed — but pairing the two
+    // avoids any path where ORT keeps a lazy GPU buffer around.
+    preferredOutputLocation: "cpu",
   };
 }
 
