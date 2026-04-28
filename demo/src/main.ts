@@ -122,34 +122,34 @@ const heatmap = $<HTMLCanvasElement>("heatmap");
 const heatmapTooltip = $<HTMLDivElement>("heatmap-tooltip");
 const rfDensity = $<HTMLSelectElement>("rf-density");
 const rfFamhist = $<HTMLInputElement>("rf-famhist");
-const rfBiopsyBenign = $<HTMLInputElement>("rf-biopsy-benign");
-const rfBiopsyLcis = $<HTMLInputElement>("rf-biopsy-lcis");
-const rfBiopsyAtypical = $<HTMLInputElement>("rf-biopsy-atypical");
+const rfBiopsyBenign = $<HTMLSelectElement>("rf-biopsy-benign");
+const rfBiopsyLcis = $<HTMLSelectElement>("rf-biopsy-lcis");
+const rfBiopsyAtypical = $<HTMLSelectElement>("rf-biopsy-atypical");
 const rfAge = $<HTMLInputElement>("rf-age");
 const rfMenarcheAge = $<HTMLInputElement>("rf-menarche-age");
 const rfMenopauseAge = $<HTMLInputElement>("rf-menopause-age");
 const rfFirstPregnancyAge = $<HTMLInputElement>("rf-first-pregnancy-age");
-const rfPriorHist = $<HTMLInputElement>("rf-prior-hist");
+const rfPriorHist = $<HTMLSelectElement>("rf-prior-hist");
 const rfRace = $<HTMLSelectElement>("rf-race");
 const rfNumBirths = $<HTMLInputElement>("rf-num-births");
 const rfWeight = $<HTMLInputElement>("rf-weight");
 const rfHeight = $<HTMLInputElement>("rf-height");
-const rfOvarianCancer = $<HTMLInputElement>("rf-ovarian-cancer");
+const rfOvarianCancer = $<HTMLSelectElement>("rf-ovarian-cancer");
 const rfOvarianCancerAge = $<HTMLInputElement>("rf-ovarian-cancer-age");
-const rfAshkenazi = $<HTMLInputElement>("rf-ashkenazi");
+const rfAshkenazi = $<HTMLSelectElement>("rf-ashkenazi");
 const rfBrca = $<HTMLSelectElement>("rf-brca");
-const rfMomBc = $<HTMLInputElement>("rf-mom-bc");
-const rfMAuntBc = $<HTMLInputElement>("rf-m-aunt-bc");
-const rfPAuntBc = $<HTMLInputElement>("rf-p-aunt-bc");
-const rfMGrandmotherBc = $<HTMLInputElement>("rf-m-grandmother-bc");
-const rfPGrandmotherBc = $<HTMLInputElement>("rf-p-grandmother-bc");
-const rfSisterBc = $<HTMLInputElement>("rf-sister-bc");
-const rfMomOc = $<HTMLInputElement>("rf-mom-oc");
-const rfMAuntOc = $<HTMLInputElement>("rf-m-aunt-oc");
-const rfPAuntOc = $<HTMLInputElement>("rf-p-aunt-oc");
-const rfMGrandmotherOc = $<HTMLInputElement>("rf-m-grandmother-oc");
-const rfPGrandmotherOc = $<HTMLInputElement>("rf-p-grandmother-oc");
-const rfSisterOc = $<HTMLInputElement>("rf-sister-oc");
+const rfMomBc = $<HTMLSelectElement>("rf-mom-bc");
+const rfMAuntBc = $<HTMLSelectElement>("rf-m-aunt-bc");
+const rfPAuntBc = $<HTMLSelectElement>("rf-p-aunt-bc");
+const rfMGrandmotherBc = $<HTMLSelectElement>("rf-m-grandmother-bc");
+const rfPGrandmotherBc = $<HTMLSelectElement>("rf-p-grandmother-bc");
+const rfSisterBc = $<HTMLSelectElement>("rf-sister-bc");
+const rfMomOc = $<HTMLSelectElement>("rf-mom-oc");
+const rfMAuntOc = $<HTMLSelectElement>("rf-m-aunt-oc");
+const rfPAuntOc = $<HTMLSelectElement>("rf-p-aunt-oc");
+const rfMGrandmotherOc = $<HTMLSelectElement>("rf-m-grandmother-oc");
+const rfPGrandmotherOc = $<HTMLSelectElement>("rf-p-grandmother-oc");
+const rfSisterOc = $<HTMLSelectElement>("rf-sister-oc");
 const rfHrtType = $<HTMLSelectElement>("rf-hrt-type");
 const rfHrtDuration = $<HTMLInputElement>("rf-hrt-duration");
 const rfHrtLastAge = $<HTMLInputElement>("rf-hrt-last-age");
@@ -231,6 +231,15 @@ function readInt(el: HTMLInputElement | HTMLSelectElement): number | undefined {
   return Number.isFinite(v) ? v : undefined;
 }
 
+// Tri-state binary input. "" → undefined (unknown, mask=0; model fills in),
+// "0" → false (known no, mask=1, value=0), "1" → true (known yes, mask=1,
+// value=1). Distinct slots in the 100-dim risk-factor block.
+function readTriState(el: HTMLSelectElement): boolean | undefined {
+  if (el.value === "1") return true;
+  if (el.value === "0") return false;
+  return undefined;
+}
+
 function buildRiskFactors(): MiraiRiskFactors {
   const rf: MiraiRiskFactors = {};
 
@@ -238,10 +247,13 @@ function buildRiskFactors(): MiraiRiskFactors {
   const density = readInt(rfDensity);
   if (density !== undefined) rf.density = density as DensityCode;
 
-  // 3-5. biopsies
-  if (rfBiopsyBenign.checked) rf.biopsyHyperplasia = true;
-  if (rfBiopsyLcis.checked) rf.biopsyLCIS = true;
-  if (rfBiopsyAtypical.checked) rf.biopsyAtypicalHyperplasia = true;
+  // 3-5. biopsies (tri-state)
+  const biopsyBenign = readTriState(rfBiopsyBenign);
+  if (biopsyBenign !== undefined) rf.biopsyHyperplasia = biopsyBenign;
+  const biopsyLcis = readTriState(rfBiopsyLcis);
+  if (biopsyLcis !== undefined) rf.biopsyLCIS = biopsyLcis;
+  const biopsyAtypical = readTriState(rfBiopsyAtypical);
+  if (biopsyAtypical !== undefined) rf.biopsyAtypicalHyperplasia = biopsyAtypical;
 
   // 6-9. ages
   const age = readInt(rfAge);
@@ -253,8 +265,9 @@ function buildRiskFactors(): MiraiRiskFactors {
   const firstPregnancyAge = readInt(rfFirstPregnancyAge);
   if (firstPregnancyAge !== undefined) rf.firstPregnancyAge = firstPregnancyAge;
 
-  // 10. prior hist
-  if (rfPriorHist.checked) rf.priorHist = true;
+  // 10. prior hist (tri-state)
+  const priorHist = readTriState(rfPriorHist);
+  if (priorHist !== undefined) rf.priorHist = priorHist;
 
   // 11. race
   const race = readInt(rfRace);
@@ -270,13 +283,15 @@ function buildRiskFactors(): MiraiRiskFactors {
   const height = readInt(rfHeight);
   if (height !== undefined) rf.height = height;
 
-  // 16-17. ovarian cancer
-  if (rfOvarianCancer.checked) rf.ovarianCancer = true;
+  // 16-17. ovarian cancer (tri-state for the binary)
+  const ovarianCancer = readTriState(rfOvarianCancer);
+  if (ovarianCancer !== undefined) rf.ovarianCancer = ovarianCancer;
   const ocAge = readInt(rfOvarianCancerAge);
   if (ocAge !== undefined) rf.ovarianCancerAge = ocAge;
 
-  // 18. ashkenazi
-  if (rfAshkenazi.checked) rf.ashkenazi = true;
+  // 18. ashkenazi (tri-state)
+  const ashkenazi = readTriState(rfAshkenazi);
+  if (ashkenazi !== undefined) rf.ashkenazi = ashkenazi;
 
   // 19. brca: drives the 4-class one-hot via brca1/brca2 booleans.
   // ""→don't set (idx 0, never/unknown), "negative"→brca1=false (idx 1),
@@ -295,11 +310,14 @@ function buildRiskFactors(): MiraiRiskFactors {
   }
 
   // 20-31. per-relative breast/ovarian cancer history. Each relative code
-  // gets one Relative object combining the bc and oc checkboxes. If any are
-  // set, those drive `binary_family_history` and the per-relative keys. If
-  // none are set but the row-2 shortcut is checked, fall back to the legacy
-  // `{ M: [{}] }` sentinel that flips just `binary_family_history`.
-  const relSpec: { code: RelativeCode; bc: HTMLInputElement; oc: HTMLInputElement }[] = [
+  // gets one Relative object combining its bc and oc tri-state selects. If
+  // either side is non-Unknown (true or false), the relative is added to
+  // `input.relatives`, which marks BOTH `*_bc_cancer_history` and
+  // `*_oc_cancer_history` "known" via `factors.ts` `perRelative()` —
+  // upstream Mirai ties known-status per relative, so an Unknown side gets
+  // coerced to `false` (known No) once the other side is set. The row-2
+  // shortcut applies only when no per-relative is set.
+  const relSpec: { code: RelativeCode; bc: HTMLSelectElement; oc: HTMLSelectElement }[] = [
     { code: "M", bc: rfMomBc, oc: rfMomOc },
     { code: "MA", bc: rfMAuntBc, oc: rfMAuntOc },
     { code: "PA", bc: rfPAuntBc, oc: rfPAuntOc },
@@ -310,11 +328,13 @@ function buildRiskFactors(): MiraiRiskFactors {
   const relatives: Partial<Record<RelativeCode, Relative[]>> = {};
   let anyPerRelative = false;
   for (const { code, bc, oc } of relSpec) {
-    if (bc.checked || oc.checked) {
+    const bcVal = readTriState(bc);
+    const ocVal = readTriState(oc);
+    if (bcVal !== undefined || ocVal !== undefined) {
       anyPerRelative = true;
       const r: Relative = {};
-      if (bc.checked) r.breastCancer = true;
-      if (oc.checked) r.ovarianCancer = true;
+      if (bcVal !== undefined) r.breastCancer = bcVal;
+      if (ocVal !== undefined) r.ovarianCancer = ocVal;
       relatives[code] = [r];
     }
   }

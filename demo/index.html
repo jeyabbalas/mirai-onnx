@@ -112,6 +112,7 @@
       .rf-row > label { min-width: 0; }
       .rf-row select, .rf-row input[type="number"] { width: 100%; }
       .rf-row .rf-derived { color: var(--muted); font-style: italic; font-size: 12px; }
+      .rf-note { grid-column: 1 / -1; color: var(--muted); font-size: 12px; font-style: italic; padding: 4px 0; border-top: 1px solid var(--border); margin-top: 4px; }
       @media (max-width: 720px) { .rf-grid { grid-template-columns: 1fr; } }
       .dropzone {
         border: 2px dashed var(--border);
@@ -171,17 +172,29 @@
           <!-- 3. binary_biopsy_benign -->
           <div class="rf-row">
             <label for="rf-biopsy-benign">3. biopsy: benign (hyperplasia)</label>
-            <span><input type="checkbox" id="rf-biopsy-benign" /></span>
+            <select id="rf-biopsy-benign">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 4. binary_biopsy_LCIS -->
           <div class="rf-row">
             <label for="rf-biopsy-lcis">4. biopsy: LCIS</label>
-            <span><input type="checkbox" id="rf-biopsy-lcis" /></span>
+            <select id="rf-biopsy-lcis">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 5. binary_biopsy_atypical_hyperplasia -->
           <div class="rf-row">
             <label for="rf-biopsy-atypical">5. biopsy: atypical hyperplasia</label>
-            <span><input type="checkbox" id="rf-biopsy-atypical" /></span>
+            <select id="rf-biopsy-atypical">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 6. age -->
           <div class="rf-row">
@@ -206,7 +219,11 @@
           <!-- 10. prior_hist -->
           <div class="rf-row">
             <label for="rf-prior-hist">10. prior breast cancer history</label>
-            <span><input type="checkbox" id="rf-prior-hist" /></span>
+            <select id="rf-prior-hist">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 11. race -->
           <div class="rf-row">
@@ -251,7 +268,11 @@
           <!-- 16. ovarian_cancer -->
           <div class="rf-row">
             <label for="rf-ovarian-cancer">16. personal ovarian cancer history</label>
-            <span><input type="checkbox" id="rf-ovarian-cancer" /></span>
+            <select id="rf-ovarian-cancer">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 17. ovarian_cancer_age -->
           <div class="rf-row">
@@ -261,7 +282,11 @@
           <!-- 18. ashkenazi -->
           <div class="rf-row">
             <label for="rf-ashkenazi">18. Ashkenazi Jewish heritage</label>
-            <span><input type="checkbox" id="rf-ashkenazi" /></span>
+            <select id="rf-ashkenazi">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 19. brca -->
           <div class="rf-row">
@@ -273,65 +298,116 @@
               <option value="brca2">BRCA2 positive</option>
             </select>
           </div>
+          <div class="rf-note">
+            Note: setting either BC or OC for a relative marks the other as "no" if left "unknown" — upstream Mirai ties known-status per relative.
+          </div>
           <!-- 20. mom_bc_cancer_history -->
           <div class="rf-row">
             <label for="rf-mom-bc">20. mother — breast cancer</label>
-            <span><input type="checkbox" id="rf-mom-bc" /></span>
+            <select id="rf-mom-bc">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 21. m_aunt_bc_cancer_history -->
           <div class="rf-row">
             <label for="rf-m-aunt-bc">21. maternal aunt — breast cancer</label>
-            <span><input type="checkbox" id="rf-m-aunt-bc" /></span>
+            <select id="rf-m-aunt-bc">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 22. p_aunt_bc_cancer_history -->
           <div class="rf-row">
             <label for="rf-p-aunt-bc">22. paternal aunt — breast cancer</label>
-            <span><input type="checkbox" id="rf-p-aunt-bc" /></span>
+            <select id="rf-p-aunt-bc">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 23. m_grandmother_bc_cancer_history -->
           <div class="rf-row">
             <label for="rf-m-grandmother-bc">23. maternal grandmother — breast cancer</label>
-            <span><input type="checkbox" id="rf-m-grandmother-bc" /></span>
+            <select id="rf-m-grandmother-bc">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 24. p_grantmother_bc_cancer_history (preserve upstream typo) -->
           <div class="rf-row">
             <label for="rf-p-grandmother-bc">24. paternal grandmother — breast cancer</label>
-            <span><input type="checkbox" id="rf-p-grandmother-bc" /></span>
+            <select id="rf-p-grandmother-bc">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 25. sister_bc_cancer_history -->
           <div class="rf-row">
             <label for="rf-sister-bc">25. sister — breast cancer</label>
-            <span><input type="checkbox" id="rf-sister-bc" /></span>
+            <select id="rf-sister-bc">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 26. mom_oc_cancer_history -->
           <div class="rf-row">
             <label for="rf-mom-oc">26. mother — ovarian cancer</label>
-            <span><input type="checkbox" id="rf-mom-oc" /></span>
+            <select id="rf-mom-oc">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 27. m_aunt_oc_cancer_history -->
           <div class="rf-row">
             <label for="rf-m-aunt-oc">27. maternal aunt — ovarian cancer</label>
-            <span><input type="checkbox" id="rf-m-aunt-oc" /></span>
+            <select id="rf-m-aunt-oc">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 28. p_aunt_oc_cancer_history -->
           <div class="rf-row">
             <label for="rf-p-aunt-oc">28. paternal aunt — ovarian cancer</label>
-            <span><input type="checkbox" id="rf-p-aunt-oc" /></span>
+            <select id="rf-p-aunt-oc">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 29. m_grandmother_oc_cancer_history -->
           <div class="rf-row">
             <label for="rf-m-grandmother-oc">29. maternal grandmother — ovarian cancer</label>
-            <span><input type="checkbox" id="rf-m-grandmother-oc" /></span>
+            <select id="rf-m-grandmother-oc">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 30. p_grantmother_oc_cancer_history -->
           <div class="rf-row">
             <label for="rf-p-grandmother-oc">30. paternal grandmother — ovarian cancer</label>
-            <span><input type="checkbox" id="rf-p-grandmother-oc" /></span>
+            <select id="rf-p-grandmother-oc">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 31. sister_oc_cancer_history -->
           <div class="rf-row">
             <label for="rf-sister-oc">31. sister — ovarian cancer</label>
-            <span><input type="checkbox" id="rf-sister-oc" /></span>
+            <select id="rf-sister-oc">
+              <option value="">unknown</option>
+              <option value="0">no</option>
+              <option value="1">yes</option>
+            </select>
           </div>
           <!-- 32. hrt_type -->
           <div class="rf-row">
