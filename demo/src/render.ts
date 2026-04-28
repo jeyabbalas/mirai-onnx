@@ -1,8 +1,8 @@
 // 34 × 18 = 612 cell heatmap for the post-ReLU pre-hazard embedding. Linear
 // grayscale 0 → max (post-ReLU is non-negative). No dependencies.
 
-const ROWS = 34;
-const COLS = 18;
+export const ROWS = 34;
+export const COLS = 18;
 
 export function drawHeatmap(canvas: HTMLCanvasElement, embedding: Float32Array): void {
   if (embedding.length !== ROWS * COLS) {

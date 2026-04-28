@@ -82,7 +82,37 @@
         background: #eef3fa;
         color: var(--accent);
       }
-      #heatmap { border: 1px solid var(--border); image-rendering: pixelated; }
+      #heatmap { border: 1px solid var(--border); image-rendering: pixelated; display: block; }
+      .heatmap-wrap { position: relative; display: inline-block; }
+      #heatmap-tooltip {
+        position: absolute;
+        pointer-events: none;
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 3px;
+        font-family: var(--mono);
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 10;
+      }
+      #heatmap-tooltip[hidden] { display: none; }
+      .rf-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px 24px;
+      }
+      .rf-row {
+        display: grid;
+        grid-template-columns: minmax(180px, 1.2fr) minmax(140px, 1fr);
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+      }
+      .rf-row > label { min-width: 0; }
+      .rf-row select, .rf-row input[type="number"] { width: 100%; }
+      .rf-row .rf-derived { color: var(--muted); font-style: italic; font-size: 12px; }
+      @media (max-width: 720px) { .rf-grid { grid-template-columns: 1fr; } }
       .dropzone {
         border: 2px dashed var(--border);
         border-radius: 6px;
@@ -118,27 +148,212 @@
 
       <div class="panel">
         <h2>2. Risk factors (optional)</h2>
-        <div>
-          <label>Age (years)</label>
-          <input type="number" id="rf-age" min="18" max="100" step="1" placeholder="unknown" />
-        </div>
-        <div>
-          <label>Density (BI-RADS)</label>
-          <select id="rf-density">
-            <option value="">unknown</option>
-            <option value="1">1 — almost entirely fatty</option>
-            <option value="2">2 — scattered fibroglandular</option>
-            <option value="3">3 — heterogeneously dense</option>
-            <option value="4">4 — extremely dense</option>
-          </select>
-        </div>
-        <div>
-          <label>Family history</label>
-          <input type="checkbox" id="rf-famhist" /> 1st-degree relative with breast cancer
-        </div>
-        <p class="subtitle" style="margin-top:8px">
-          Missing keys fall back to the model-predicted risk-factor path (same as the Python demo).
+        <p class="subtitle" style="margin-top:0; margin-bottom:10px">
+          Listed in the canonical order of the 34 risk-factor keys (matches the 100-dim RF block of the embedding). Missing keys fall back to the model-predicted risk-factor path.
         </p>
+        <div class="rf-grid">
+          <!-- 1. density -->
+          <div class="rf-row">
+            <label for="rf-density">1. density (BI-RADS)</label>
+            <select id="rf-density">
+              <option value="">unknown</option>
+              <option value="1">1 — almost entirely fatty</option>
+              <option value="2">2 — scattered fibroglandular</option>
+              <option value="3">3 — heterogeneously dense</option>
+              <option value="4">4 — extremely dense</option>
+            </select>
+          </div>
+          <!-- 2. binary_family_history -->
+          <div class="rf-row">
+            <label for="rf-famhist">2. family history (any 1st-deg)</label>
+            <span><input type="checkbox" id="rf-famhist" /> shortcut if specifics unknown</span>
+          </div>
+          <!-- 3. binary_biopsy_benign -->
+          <div class="rf-row">
+            <label for="rf-biopsy-benign">3. biopsy: benign (hyperplasia)</label>
+            <span><input type="checkbox" id="rf-biopsy-benign" /></span>
+          </div>
+          <!-- 4. binary_biopsy_LCIS -->
+          <div class="rf-row">
+            <label for="rf-biopsy-lcis">4. biopsy: LCIS</label>
+            <span><input type="checkbox" id="rf-biopsy-lcis" /></span>
+          </div>
+          <!-- 5. binary_biopsy_atypical_hyperplasia -->
+          <div class="rf-row">
+            <label for="rf-biopsy-atypical">5. biopsy: atypical hyperplasia</label>
+            <span><input type="checkbox" id="rf-biopsy-atypical" /></span>
+          </div>
+          <!-- 6. age -->
+          <div class="rf-row">
+            <label for="rf-age">6. age (years)</label>
+            <input type="number" id="rf-age" min="18" max="100" step="1" placeholder="unknown" />
+          </div>
+          <!-- 7. menarche_age -->
+          <div class="rf-row">
+            <label for="rf-menarche-age">7. menarche age (years)</label>
+            <input type="number" id="rf-menarche-age" min="5" max="25" step="1" placeholder="unknown" />
+          </div>
+          <!-- 8. menopause_age -->
+          <div class="rf-row">
+            <label for="rf-menopause-age">8. menopause age (years)</label>
+            <input type="number" id="rf-menopause-age" min="20" max="80" step="1" placeholder="unknown" />
+          </div>
+          <!-- 9. first_pregnancy_age -->
+          <div class="rf-row">
+            <label for="rf-first-pregnancy-age">9. first pregnancy age (years)</label>
+            <input type="number" id="rf-first-pregnancy-age" min="10" max="60" step="1" placeholder="unknown" />
+          </div>
+          <!-- 10. prior_hist -->
+          <div class="rf-row">
+            <label for="rf-prior-hist">10. prior breast cancer history</label>
+            <span><input type="checkbox" id="rf-prior-hist" /></span>
+          </div>
+          <!-- 11. race -->
+          <div class="rf-row">
+            <label for="rf-race">11. race</label>
+            <select id="rf-race">
+              <option value="">unknown</option>
+              <option value="1">White</option>
+              <option value="2">African American</option>
+              <option value="3">American Indian, Eskimo, Aleut</option>
+              <option value="4">Asian or Pacific Islander</option>
+              <option value="5">Other Race</option>
+              <option value="6">Caribbean/West Indian</option>
+              <option value="7">Unknown</option>
+              <option value="8">Hispanic</option>
+              <option value="9">Chinese</option>
+              <option value="10">Japanese</option>
+              <option value="11">Filipino</option>
+              <option value="12">Hawaiian</option>
+              <option value="13">Other Asian</option>
+            </select>
+          </div>
+          <!-- 12. parous (drives via num_births) -->
+          <div class="rf-row">
+            <label for="rf-num-births">12. parous (number of births)</label>
+            <input type="number" id="rf-num-births" min="0" max="20" step="1" placeholder="unknown" />
+          </div>
+          <!-- 13. menopausal_status (purely derived) -->
+          <div class="rf-row">
+            <label>13. menopausal status</label>
+            <span class="rf-derived">auto-derived from age &amp; menopause age</span>
+          </div>
+          <!-- 14. weight -->
+          <div class="rf-row">
+            <label for="rf-weight">14. weight (lbs)</label>
+            <input type="number" id="rf-weight" min="50" max="500" step="1" placeholder="unknown" />
+          </div>
+          <!-- 15. height -->
+          <div class="rf-row">
+            <label for="rf-height">15. height (inches)</label>
+            <input type="number" id="rf-height" min="30" max="90" step="1" placeholder="unknown" />
+          </div>
+          <!-- 16. ovarian_cancer -->
+          <div class="rf-row">
+            <label for="rf-ovarian-cancer">16. personal ovarian cancer history</label>
+            <span><input type="checkbox" id="rf-ovarian-cancer" /></span>
+          </div>
+          <!-- 17. ovarian_cancer_age -->
+          <div class="rf-row">
+            <label for="rf-ovarian-cancer-age">17. ovarian cancer age (years)</label>
+            <input type="number" id="rf-ovarian-cancer-age" min="5" max="100" step="1" placeholder="unknown" />
+          </div>
+          <!-- 18. ashkenazi -->
+          <div class="rf-row">
+            <label for="rf-ashkenazi">18. Ashkenazi Jewish heritage</label>
+            <span><input type="checkbox" id="rf-ashkenazi" /></span>
+          </div>
+          <!-- 19. brca -->
+          <div class="rf-row">
+            <label for="rf-brca">19. BRCA status</label>
+            <select id="rf-brca">
+              <option value="">never tested or unknown</option>
+              <option value="negative">negative result</option>
+              <option value="brca1">BRCA1 positive</option>
+              <option value="brca2">BRCA2 positive</option>
+            </select>
+          </div>
+          <!-- 20. mom_bc_cancer_history -->
+          <div class="rf-row">
+            <label for="rf-mom-bc">20. mother — breast cancer</label>
+            <span><input type="checkbox" id="rf-mom-bc" /></span>
+          </div>
+          <!-- 21. m_aunt_bc_cancer_history -->
+          <div class="rf-row">
+            <label for="rf-m-aunt-bc">21. maternal aunt — breast cancer</label>
+            <span><input type="checkbox" id="rf-m-aunt-bc" /></span>
+          </div>
+          <!-- 22. p_aunt_bc_cancer_history -->
+          <div class="rf-row">
+            <label for="rf-p-aunt-bc">22. paternal aunt — breast cancer</label>
+            <span><input type="checkbox" id="rf-p-aunt-bc" /></span>
+          </div>
+          <!-- 23. m_grandmother_bc_cancer_history -->
+          <div class="rf-row">
+            <label for="rf-m-grandmother-bc">23. maternal grandmother — breast cancer</label>
+            <span><input type="checkbox" id="rf-m-grandmother-bc" /></span>
+          </div>
+          <!-- 24. p_grantmother_bc_cancer_history (preserve upstream typo) -->
+          <div class="rf-row">
+            <label for="rf-p-grandmother-bc">24. paternal grandmother — breast cancer</label>
+            <span><input type="checkbox" id="rf-p-grandmother-bc" /></span>
+          </div>
+          <!-- 25. sister_bc_cancer_history -->
+          <div class="rf-row">
+            <label for="rf-sister-bc">25. sister — breast cancer</label>
+            <span><input type="checkbox" id="rf-sister-bc" /></span>
+          </div>
+          <!-- 26. mom_oc_cancer_history -->
+          <div class="rf-row">
+            <label for="rf-mom-oc">26. mother — ovarian cancer</label>
+            <span><input type="checkbox" id="rf-mom-oc" /></span>
+          </div>
+          <!-- 27. m_aunt_oc_cancer_history -->
+          <div class="rf-row">
+            <label for="rf-m-aunt-oc">27. maternal aunt — ovarian cancer</label>
+            <span><input type="checkbox" id="rf-m-aunt-oc" /></span>
+          </div>
+          <!-- 28. p_aunt_oc_cancer_history -->
+          <div class="rf-row">
+            <label for="rf-p-aunt-oc">28. paternal aunt — ovarian cancer</label>
+            <span><input type="checkbox" id="rf-p-aunt-oc" /></span>
+          </div>
+          <!-- 29. m_grandmother_oc_cancer_history -->
+          <div class="rf-row">
+            <label for="rf-m-grandmother-oc">29. maternal grandmother — ovarian cancer</label>
+            <span><input type="checkbox" id="rf-m-grandmother-oc" /></span>
+          </div>
+          <!-- 30. p_grantmother_oc_cancer_history -->
+          <div class="rf-row">
+            <label for="rf-p-grandmother-oc">30. paternal grandmother — ovarian cancer</label>
+            <span><input type="checkbox" id="rf-p-grandmother-oc" /></span>
+          </div>
+          <!-- 31. sister_oc_cancer_history -->
+          <div class="rf-row">
+            <label for="rf-sister-oc">31. sister — ovarian cancer</label>
+            <span><input type="checkbox" id="rf-sister-oc" /></span>
+          </div>
+          <!-- 32. hrt_type -->
+          <div class="rf-row">
+            <label for="rf-hrt-type">32. HRT type</label>
+            <select id="rf-hrt-type">
+              <option value="">none / unknown</option>
+              <option value="combined">combined</option>
+              <option value="estrogen">estrogen</option>
+              <option value="unknown">unknown type</option>
+            </select>
+          </div>
+          <!-- 33. hrt_duration -->
+          <div class="rf-row">
+            <label for="rf-hrt-duration">33. HRT duration (years)</label>
+            <input type="number" id="rf-hrt-duration" min="0" max="50" step="1" placeholder="unknown" />
+          </div>
+          <!-- 34. hrt_years_ago_stopped -->
+          <div class="rf-row">
+            <label for="rf-hrt-last-age">34. HRT last age (years)</label>
+            <input type="number" id="rf-hrt-last-age" min="20" max="100" step="1" placeholder="unknown" />
+          </div>
+        </div>
       </div>
 
       <div class="panel">
@@ -176,9 +391,12 @@
 
       <div class="panel">
         <h2>XAI embedding (612-dim, post-ReLU)</h2>
-        <canvas id="heatmap" width="540" height="476"></canvas>
+        <div class="heatmap-wrap">
+          <canvas id="heatmap" width="540" height="476"></canvas>
+          <div id="heatmap-tooltip" hidden></div>
+        </div>
         <div style="margin-top:8px; font-size:12px; color:var(--muted)">
-          Laid out as 34 rows × 18 cols (= 612). Darker = larger activation. First 512 dims are image features; last 100 are the risk-factor block.
+          Laid out as 34 rows × 18 cols (= 612). Darker = larger activation. First 512 dims are image features (<code>img_emb_1…512</code>); last 100 are the risk-factor block (<code>density_1</code>…<code>hrt_years_ago_stopped_gt_7</code>). Hover any cell for its label and activation.
         </div>
         <div style="margin-top:8px">
           <button id="download-btn" class="secondary" type="button" disabled>Download embedding as JSON</button>

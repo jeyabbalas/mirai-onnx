@@ -15,13 +15,40 @@ import {
   loadCalibrator,
   createWebSessionsFromBytes,
   MIRAI_MODEL_VERSION,
+  FEATURE_NAMES,
   type Calibrator,
   type MiraiSessions,
   type MiraiStage,
   type MiraiRiskFactors,
   type DensityCode,
+  type RaceCode,
+  type RelativeCode,
+  type Relative,
+  type HrtType,
 } from "mirai-onnx-web";
-import { drawHeatmap } from "./render.js";
+import { drawHeatmap, ROWS, COLS } from "./render.js";
+
+// Image-encoder dims occupy `embedding[0..511]`; risk-factor dims occupy
+// `embedding[512..611]` and align with FEATURE_NAMES (canonical training-time
+// feature names from the upstream Python `get_feature_names()`). This array
+// drives both the heatmap tooltip and the labeled JSON download — the demo
+// never re-types these strings, so a label can never silently drift from
+// what the model trained against.
+const IMAGE_EMBEDDING_DIM = 512;
+const RISK_FACTOR_EMBEDDING_DIM = 100;
+const HEATMAP_DIM = IMAGE_EMBEDDING_DIM + RISK_FACTOR_EMBEDDING_DIM;
+if (FEATURE_NAMES.length !== RISK_FACTOR_EMBEDDING_DIM) {
+  throw new Error(
+    `mirai-onnx-web FEATURE_NAMES length=${FEATURE_NAMES.length}, expected ${RISK_FACTOR_EMBEDDING_DIM}`,
+  );
+}
+if (HEATMAP_DIM !== ROWS * COLS) {
+  throw new Error(`heatmap dim mismatch: ${HEATMAP_DIM} != ${ROWS}*${COLS}`);
+}
+const LABELS: readonly string[] = Object.freeze([
+  ...Array.from({ length: IMAGE_EMBEDDING_DIM }, (_, i) => `img_emb_${i + 1}`),
+  ...FEATURE_NAMES,
+]);
 
 // Vite injects `import.meta.env.BASE_URL` with a trailing slash: "/" in dev,
 // "/mirai-onnx/" under the Pages workflow (vite.config.ts reads DEPLOY_BASE_URL).
@@ -92,9 +119,40 @@ const timingsTableBody = $<HTMLTableSectionElement>(
   "timings-table",
 ).querySelector("tbody") as HTMLTableSectionElement;
 const heatmap = $<HTMLCanvasElement>("heatmap");
-const rfAge = $<HTMLInputElement>("rf-age");
+const heatmapTooltip = $<HTMLDivElement>("heatmap-tooltip");
 const rfDensity = $<HTMLSelectElement>("rf-density");
 const rfFamhist = $<HTMLInputElement>("rf-famhist");
+const rfBiopsyBenign = $<HTMLInputElement>("rf-biopsy-benign");
+const rfBiopsyLcis = $<HTMLInputElement>("rf-biopsy-lcis");
+const rfBiopsyAtypical = $<HTMLInputElement>("rf-biopsy-atypical");
+const rfAge = $<HTMLInputElement>("rf-age");
+const rfMenarcheAge = $<HTMLInputElement>("rf-menarche-age");
+const rfMenopauseAge = $<HTMLInputElement>("rf-menopause-age");
+const rfFirstPregnancyAge = $<HTMLInputElement>("rf-first-pregnancy-age");
+const rfPriorHist = $<HTMLInputElement>("rf-prior-hist");
+const rfRace = $<HTMLSelectElement>("rf-race");
+const rfNumBirths = $<HTMLInputElement>("rf-num-births");
+const rfWeight = $<HTMLInputElement>("rf-weight");
+const rfHeight = $<HTMLInputElement>("rf-height");
+const rfOvarianCancer = $<HTMLInputElement>("rf-ovarian-cancer");
+const rfOvarianCancerAge = $<HTMLInputElement>("rf-ovarian-cancer-age");
+const rfAshkenazi = $<HTMLInputElement>("rf-ashkenazi");
+const rfBrca = $<HTMLSelectElement>("rf-brca");
+const rfMomBc = $<HTMLInputElement>("rf-mom-bc");
+const rfMAuntBc = $<HTMLInputElement>("rf-m-aunt-bc");
+const rfPAuntBc = $<HTMLInputElement>("rf-p-aunt-bc");
+const rfMGrandmotherBc = $<HTMLInputElement>("rf-m-grandmother-bc");
+const rfPGrandmotherBc = $<HTMLInputElement>("rf-p-grandmother-bc");
+const rfSisterBc = $<HTMLInputElement>("rf-sister-bc");
+const rfMomOc = $<HTMLInputElement>("rf-mom-oc");
+const rfMAuntOc = $<HTMLInputElement>("rf-m-aunt-oc");
+const rfPAuntOc = $<HTMLInputElement>("rf-p-aunt-oc");
+const rfMGrandmotherOc = $<HTMLInputElement>("rf-m-grandmother-oc");
+const rfPGrandmotherOc = $<HTMLInputElement>("rf-p-grandmother-oc");
+const rfSisterOc = $<HTMLInputElement>("rf-sister-oc");
+const rfHrtType = $<HTMLSelectElement>("rf-hrt-type");
+const rfHrtDuration = $<HTMLInputElement>("rf-hrt-duration");
+const rfHrtLastAge = $<HTMLInputElement>("rf-hrt-last-age");
 const footerVersion = $<HTMLSpanElement>("footer-version");
 footerVersion.textContent = `modelVersion: ${MIRAI_MODEL_VERSION}`;
 
@@ -168,18 +226,114 @@ async function ensureCalibrator(): Promise<void> {
   calibrator = loadCalibrator(json);
 }
 
+function readInt(el: HTMLInputElement | HTMLSelectElement): number | undefined {
+  const v = Number.parseInt(el.value, 10);
+  return Number.isFinite(v) ? v : undefined;
+}
+
 function buildRiskFactors(): MiraiRiskFactors {
   const rf: MiraiRiskFactors = {};
-  const age = Number.parseInt(rfAge.value, 10);
-  if (Number.isFinite(age)) rf.age = age;
-  const density = Number.parseInt(rfDensity.value, 10);
-  if (Number.isFinite(density)) rf.density = density as DensityCode;
-  if (rfFamhist.checked) {
-    // `binary_family_history` is derived from the `relatives` dict: any
-    // relative-code list with at least one entry flips the bit. Use mother as
-    // the sentinel when the UI just asserts "someone in the family."
+
+  // 1. density
+  const density = readInt(rfDensity);
+  if (density !== undefined) rf.density = density as DensityCode;
+
+  // 3-5. biopsies
+  if (rfBiopsyBenign.checked) rf.biopsyHyperplasia = true;
+  if (rfBiopsyLcis.checked) rf.biopsyLCIS = true;
+  if (rfBiopsyAtypical.checked) rf.biopsyAtypicalHyperplasia = true;
+
+  // 6-9. ages
+  const age = readInt(rfAge);
+  if (age !== undefined) rf.age = age;
+  const menarcheAge = readInt(rfMenarcheAge);
+  if (menarcheAge !== undefined) rf.menarcheAge = menarcheAge;
+  const menopauseAge = readInt(rfMenopauseAge);
+  if (menopauseAge !== undefined) rf.menopauseAge = menopauseAge;
+  const firstPregnancyAge = readInt(rfFirstPregnancyAge);
+  if (firstPregnancyAge !== undefined) rf.firstPregnancyAge = firstPregnancyAge;
+
+  // 10. prior hist
+  if (rfPriorHist.checked) rf.priorHist = true;
+
+  // 11. race
+  const race = readInt(rfRace);
+  if (race !== undefined) rf.race = race as RaceCode;
+
+  // 12. parous (number of births drives `parous` per factors.ts:101)
+  const numBirths = readInt(rfNumBirths);
+  if (numBirths !== undefined) rf.numBirths = numBirths;
+
+  // 14-15. weight, height
+  const weight = readInt(rfWeight);
+  if (weight !== undefined) rf.weight = weight;
+  const height = readInt(rfHeight);
+  if (height !== undefined) rf.height = height;
+
+  // 16-17. ovarian cancer
+  if (rfOvarianCancer.checked) rf.ovarianCancer = true;
+  const ocAge = readInt(rfOvarianCancerAge);
+  if (ocAge !== undefined) rf.ovarianCancerAge = ocAge;
+
+  // 18. ashkenazi
+  if (rfAshkenazi.checked) rf.ashkenazi = true;
+
+  // 19. brca: drives the 4-class one-hot via brca1/brca2 booleans.
+  // ""→don't set (idx 0, never/unknown), "negative"→brca1=false (idx 1),
+  // "brca1"→brca1=true (idx 2), "brca2"→brca2=true (idx 3). See
+  // src/mirai/riskFactors/transformers/brca.ts.
+  switch (rfBrca.value) {
+    case "negative":
+      rf.brca1 = false;
+      break;
+    case "brca1":
+      rf.brca1 = true;
+      break;
+    case "brca2":
+      rf.brca2 = true;
+      break;
+  }
+
+  // 20-31. per-relative breast/ovarian cancer history. Each relative code
+  // gets one Relative object combining the bc and oc checkboxes. If any are
+  // set, those drive `binary_family_history` and the per-relative keys. If
+  // none are set but the row-2 shortcut is checked, fall back to the legacy
+  // `{ M: [{}] }` sentinel that flips just `binary_family_history`.
+  const relSpec: { code: RelativeCode; bc: HTMLInputElement; oc: HTMLInputElement }[] = [
+    { code: "M", bc: rfMomBc, oc: rfMomOc },
+    { code: "MA", bc: rfMAuntBc, oc: rfMAuntOc },
+    { code: "PA", bc: rfPAuntBc, oc: rfPAuntOc },
+    { code: "MG", bc: rfMGrandmotherBc, oc: rfMGrandmotherOc },
+    { code: "PG", bc: rfPGrandmotherBc, oc: rfPGrandmotherOc },
+    { code: "S", bc: rfSisterBc, oc: rfSisterOc },
+  ];
+  const relatives: Partial<Record<RelativeCode, Relative[]>> = {};
+  let anyPerRelative = false;
+  for (const { code, bc, oc } of relSpec) {
+    if (bc.checked || oc.checked) {
+      anyPerRelative = true;
+      const r: Relative = {};
+      if (bc.checked) r.breastCancer = true;
+      if (oc.checked) r.ovarianCancer = true;
+      relatives[code] = [r];
+    }
+  }
+  if (anyPerRelative) {
+    rf.relatives = relatives;
+  } else if (rfFamhist.checked) {
     rf.relatives = { M: [{}] };
   }
+
+  // 32-34. HRT
+  const hrtType = rfHrtType.value;
+  if (hrtType === "combined" || hrtType === "estrogen" || hrtType === "unknown") {
+    rf.hrt = { type: hrtType as HrtType };
+    const dur = readInt(rfHrtDuration);
+    if (dur !== undefined) rf.hrt.duration = dur;
+    const lastAge = readInt(rfHrtLastAge);
+    if (lastAge !== undefined) rf.hrt.lastAge = lastAge;
+  }
+
   return rf;
 }
 
@@ -325,12 +479,18 @@ function onFileInput(): void {
 
 function onDownload(): void {
   if (!lastEmbedding) return;
+  const imageEmbedding = Array.from(lastEmbedding.subarray(0, IMAGE_EMBEDDING_DIM));
+  const rfSlice = lastEmbedding.subarray(IMAGE_EMBEDDING_DIM);
+  const riskFactorEmbedding: Record<string, number> = {};
+  for (let i = 0; i < FEATURE_NAMES.length; i++) {
+    riskFactorEmbedding[FEATURE_NAMES[i]] = rfSlice[i];
+  }
   const payload = {
     modelVersion: MIRAI_MODEL_VERSION,
-    shape: [lastEmbedding.length],
     dtype: "float32",
     postReLU: true,
-    data: Array.from(lastEmbedding),
+    imageEmbedding,
+    riskFactorEmbedding,
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -339,6 +499,39 @@ function onDownload(): void {
   a.download = "mirai-embedding.json";
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function onHeatmapMove(e: MouseEvent): void {
+  if (!lastEmbedding) {
+    heatmapTooltip.hidden = true;
+    return;
+  }
+  const rect = heatmap.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  // Map CSS-pixel coords to canvas-pixel coords (in case the canvas is scaled
+  // by CSS), then to (row, col) using the same `Math.floor(canvas.width/COLS)`
+  // cell-size that render.ts uses to fill cells. 540/18=30 and 476/34=14 are
+  // exact, so the integer floor lines up with cell boundaries on this canvas.
+  const sx = heatmap.width / rect.width;
+  const sy = heatmap.height / rect.height;
+  const cellW = Math.floor(heatmap.width / COLS);
+  const cellH = Math.floor(heatmap.height / ROWS);
+  const col = Math.floor((x * sx) / cellW);
+  const row = Math.floor((y * sy) / cellH);
+  if (row < 0 || row >= ROWS || col < 0 || col >= COLS) {
+    heatmapTooltip.hidden = true;
+    return;
+  }
+  const idx = row * COLS + col;
+  heatmapTooltip.textContent = `${LABELS[idx]}: ${lastEmbedding[idx].toFixed(4)}`;
+  heatmapTooltip.style.left = `${x + 12}px`;
+  heatmapTooltip.style.top = `${y + 12}px`;
+  heatmapTooltip.hidden = false;
+}
+
+function onHeatmapLeave(): void {
+  heatmapTooltip.hidden = true;
 }
 
 function wireDropzone(): void {
@@ -363,6 +556,8 @@ loadDemoBtn.addEventListener("click", onLoadDemo);
 runBtn.addEventListener("click", onRun);
 benchBtn.addEventListener("click", onBench);
 downloadBtn.addEventListener("click", onDownload);
+heatmap.addEventListener("mousemove", onHeatmapMove);
+heatmap.addEventListener("mouseleave", onHeatmapLeave);
 epSelect.addEventListener("change", () => {
   sessions = null;
   sessionsEP = null;
