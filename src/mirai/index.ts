@@ -37,12 +37,13 @@
 // ── Preprocessing ────────────────────────────────────────────────────────────
 export {
   preprocessDicom,
+  decodeDicom,
   MIRAI_INPUT_ROWS,
   MIRAI_INPUT_COLS,
   MIRAI_IMG_MEAN,
   MIRAI_IMG_STD,
 } from "./preprocess/index.js";
-export type { PreprocessOptions } from "./preprocess/index.js";
+export type { PreprocessOptions, DecodedDicom, DecodeOptions, WindowMethod } from "./preprocess/index.js";
 export type { PreprocessResult, View, Side } from "./types.js";
 
 // ── Risk factor vectorizer ───────────────────────────────────────────────────

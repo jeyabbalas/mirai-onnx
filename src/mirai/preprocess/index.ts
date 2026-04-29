@@ -38,6 +38,7 @@ export function preprocessDicom(
 
 export { MIRAI_IMG_MEAN, MIRAI_IMG_STD } from "./normalize.js";
 export { decodeDicom } from "./dicom.js";
+export type { DecodedDicom, DecodeOptions, WindowMethod } from "./dicom.js";
 export { resizeBilinearMode1 } from "./resize.js";
 export { alignToLeft } from "./alignToLeft.js";
 export { normalizeAndExpand } from "./normalize.js";

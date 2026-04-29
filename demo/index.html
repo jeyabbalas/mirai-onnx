@@ -124,6 +124,53 @@
       }
       .dropzone.over { border-color: var(--accent); color: var(--accent); }
       .file-list { font-family: var(--mono); font-size: 12px; margin-top: 6px; color: var(--muted); }
+      .thumbnails-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+      .thumbnail-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+      }
+      .thumbnail-card canvas {
+        background: #000;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        max-width: 100%;
+        height: auto;
+      }
+      .thumbnail-card .thumb-label {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--fg);
+      }
+      .thumbnail-card .thumb-filename {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .thumbnail-card.placeholder, .thumbnail-card.error {
+        justify-content: center;
+        font-family: var(--mono);
+        font-size: 12px;
+        min-height: 250px;
+        border: 1px dashed var(--border);
+        border-radius: 4px;
+        padding: 8px;
+        text-align: center;
+        word-break: break-word;
+      }
+      .thumbnail-card.placeholder { color: var(--muted); }
+      .thumbnail-card.error { color: #c00; border-color: #f3c2c2; }
+      @media (max-width: 720px) { .thumbnails-grid { grid-template-columns: repeat(2, 1fr); } }
       code { font-family: var(--mono); background: #eee; padding: 1px 4px; border-radius: 2px; }
       footer { color: var(--muted); font-size: 12px; margin-top: 20px; text-align: center; }
       footer a { color: var(--accent); }
@@ -147,8 +194,16 @@
         </div>
       </div>
 
+      <div class="panel" id="thumbnails-panel" hidden>
+        <h2>2. Preview</h2>
+        <p class="subtitle" style="margin-top:0; margin-bottom:10px">
+          View and laterality auto-detected from each DICOM's <code>ViewPosition (0018,5101)</code> and <code>ImageLaterality (0020,0062)</code>. Pixels are 1st–99th percentile stretched for display only — the model receives the full-range tensor.
+        </p>
+        <div id="thumbnails-grid" class="thumbnails-grid"></div>
+      </div>
+
       <div class="panel">
-        <h2>2. Risk factors (optional)</h2>
+        <h2>3. Risk factors (optional)</h2>
         <p class="subtitle" style="margin-top:0; margin-bottom:10px">
           Listed in the canonical order of the 34 risk-factor keys (matches the 100-dim RF block of the embedding). Missing keys fall back to the model-predicted risk-factor path.
         </p>
@@ -433,7 +488,7 @@
       </div>
 
       <div class="panel">
-        <h2>3. Run</h2>
+        <h2>4. Run</h2>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
           <label style="min-width:auto">Execution provider</label>
           <select id="ep-select">

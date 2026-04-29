@@ -27,6 +27,7 @@ import {
   type HrtType,
 } from "mirai-onnx-web";
 import { drawHeatmap, ROWS, COLS } from "./render.js";
+import { renderDicomThumbnail } from "./thumbnail.js";
 
 // Image-encoder dims occupy `embedding[0..511]`; risk-factor dims occupy
 // `embedding[512..611]` and align with FEATURE_NAMES (canonical training-time
@@ -120,6 +121,8 @@ const timingsTableBody = $<HTMLTableSectionElement>(
 ).querySelector("tbody") as HTMLTableSectionElement;
 const heatmap = $<HTMLCanvasElement>("heatmap");
 const heatmapTooltip = $<HTMLDivElement>("heatmap-tooltip");
+const thumbnailsPanel = $<HTMLDivElement>("thumbnails-panel");
+const thumbnailsGrid = $<HTMLDivElement>("thumbnails-grid");
 const rfDensity = $<HTMLSelectElement>("rf-density");
 const rfFamhist = $<HTMLInputElement>("rf-famhist");
 const rfBiopsyBenign = $<HTMLSelectElement>("rf-biopsy-benign");
@@ -186,6 +189,64 @@ function renderFileList(): void {
   // errors out.
   runBtn.disabled = selectedFiles.length !== 4;
   benchBtn.disabled = runBtn.disabled;
+}
+
+let thumbnailToken = 0;
+
+async function renderThumbnails(files: File[]): Promise<void> {
+  // Cancel any in-flight render: bumping the token causes the older loop to
+  // bail before mutating the DOM, so a fast Load-Demo → Drop sequence can't
+  // leave stale thumbnails on the page.
+  const token = ++thumbnailToken;
+  if (files.length !== 4) {
+    thumbnailsPanel.hidden = true;
+    thumbnailsGrid.innerHTML = "";
+    return;
+  }
+  thumbnailsPanel.hidden = false;
+  thumbnailsGrid.innerHTML = "";
+  const placeholders: HTMLDivElement[] = [];
+  for (const f of files) {
+    const card = document.createElement("div");
+    card.className = "thumbnail-card placeholder";
+    card.textContent = `Decoding ${f.name}…`;
+    thumbnailsGrid.appendChild(card);
+    placeholders.push(card);
+  }
+  for (let i = 0; i < files.length; i++) {
+    if (token !== thumbnailToken) return;
+    const f = files[i];
+    const placeholder = placeholders[i];
+    try {
+      const buf = await f.arrayBuffer();
+      // Yield once before the synchronous decode+render so the placeholder
+      // text actually paints. Decoding a single 15 MB DICOM is ~300-500 ms;
+      // without this yield the four placeholders all stay "Decoding…" until
+      // the loop unblocks.
+      await new Promise((r) => setTimeout(r, 0));
+      if (token !== thumbnailToken) return;
+      const thumb = renderDicomThumbnail(buf);
+      const card = document.createElement("div");
+      card.className = "thumbnail-card";
+      card.appendChild(thumb.canvas);
+      const label = document.createElement("div");
+      label.className = "thumb-label";
+      label.textContent = `${thumb.view}-${thumb.side}`;
+      card.appendChild(label);
+      const fname = document.createElement("div");
+      fname.className = "thumb-filename";
+      fname.title = f.name;
+      fname.textContent = f.name;
+      card.appendChild(fname);
+      placeholder.replaceWith(card);
+    } catch (err) {
+      const msg = (err as Error).message ?? String(err);
+      const card = document.createElement("div");
+      card.className = "thumbnail-card error";
+      card.textContent = `${f.name}: ${msg}`;
+      placeholder.replaceWith(card);
+    }
+  }
 }
 
 async function ensureSessions(): Promise<void> {
@@ -480,6 +541,7 @@ async function onLoadDemo(): Promise<void> {
     }
     selectedFiles = files;
     renderFileList();
+    void renderThumbnails(files);
     setStatus(`Loaded ${files.length} demo DICOMs. Click "Run prediction".`);
   } catch (err) {
     setStatus(`ERROR: ${(err as Error).message}`, true);
@@ -490,6 +552,7 @@ function onFileInput(): void {
   const files = Array.from(fileInput.files ?? []);
   selectedFiles = files;
   renderFileList();
+  void renderThumbnails(files);
   if (files.length === 4) {
     setStatus("4 DICOMs selected. Click 'Run prediction'.");
   } else if (files.length > 0) {
@@ -566,6 +629,7 @@ function wireDropzone(): void {
     const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => /\.dcm$/i.test(f.name) || f.type === "application/dicom");
     selectedFiles = files;
     renderFileList();
+    void renderThumbnails(files);
     if (files.length === 4) setStatus("4 DICOMs dropped. Click 'Run prediction'.");
     else setStatus(`Dropped ${files.length} DICOMs; need exactly 4.`, true);
   });
